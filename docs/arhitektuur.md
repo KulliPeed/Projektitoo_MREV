@@ -28,7 +28,7 @@ vähemalt ühe varasema juhatuse liikme seos lõppes.
 
 ```mermaid
 flowchart LR
-    source[Andmeallikas] --> ingest[Sissevõtt]
+    source [EMTA maksuvõla avaandmed, RIK Äriregistri avaandmed] --> ingest[Sissevõtt]
     ingest --> staging[(staging)]
     staging --> transform[Transformatsioon]
     transform --> mart[(mart)]
@@ -44,7 +44,7 @@ flowchart LR
 | Kiht | Roll |
 |------|------|
 | `staging` | Hoiab allika andmeid töötlemata kujul. |
-| `intermediate` | Puhastatud ja ühendatud andmed. |
+| `intermediate` | Puhastatud, ühtlustatud ja rikastatud andmed. |
 | `mart` | Hoiab transformeeritud ja ärilogikat sisaldavaid tabeleid. |
 
 ## Tööjaotus

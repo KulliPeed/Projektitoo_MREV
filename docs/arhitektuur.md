@@ -21,8 +21,7 @@ vähemalt ühe varasema juhatuse liikme seos lõppes.
 
 | Allikas | Tüüp | Ajas muutuv? | Roll |
 |---------|------|--------------|------|
-| EMTA maksuvõla avaandmed 
-(https://ncfailid.emta.ee/s/XKJLjtynFeYdGyC/download/maksuvolglaste_nimekiri.csv) | CSV / XLSX | Jah, iga päev | sisend ettevõtete maksuvõla olemasolu ja selle vanuse tuvastamisel |
+| EMTA maksuvõla avaandmed (https://ncfailid.emta.ee/s/XKJLjtynFeYdGyC/download/maksuvolglaste_nimekiri.csv) | CSV / XLSX | Jah, iga päev | sisend ettevõtete maksuvõla olemasolu ja selle vanuse tuvastamisel |
 | RIK Äriregistri avaandmed, kaardile kantud isikud (https://avaandmed.ariregister.rik.ee/sites/default/files/avaandmed/ettevotja_rekvisiidid__kaardile_kantud_isikud.json.zip)| XML/JSON | Jah, iga päev | sisend juhatuse liikmete seoste ja nende muutuste tuvastamisel |
 
 ## Andmevoog

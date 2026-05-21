@@ -61,11 +61,12 @@ flowchart LR
 
 | Risk | Mõju | Maandus |
 |------|------|---------|
-| Risk 1 — EMTA andmed ei uuene | Puudulikud või valed tulemused | Viimase saadaoleva snapshoti kasutus |
-| [Risk 2 -  RIK andmed ei uuene] | Puudulikud või valed tulemused | Viimase saadaoleva snapshoti kasutus |
-| [Risk 3 - võla summa puudub] | ei klassifitseeru võlaga ettevõtteks | Kui viimases saadaolevas snapshotis võla vanus puudus, jätab ettevõtte kirje järgmisse kihti (intermediate) lisamata |
+| Risk 1 — EMTA päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | Viimase saadaoleva snapshoti kasutus |
+| [Risk 2 -  RIK päeva andmed jäävad puudu] | Puudulikud või ebatäpsed tulemused | Viimase saadaoleva snapshoti kasutus |
+| [Risk 3 -  allikandmete struktuur on muutunud] | andmed jäävad uuendamata | veateavitus |
+| [Risk 4 - võla summa puudub] | ei klassifitseeru võlaga ettevõtteks | Kui viimases saadaolevas snapshotis võla summa puudus, jätab ettevõtte kirje järgmisse kihti (intermediate) lisamata |
 
 ## Privaatsus ja turve
 
-Kasutatakse ainult avalikke andmeid (avaandmed), mis ei vaja eraldi kaitset. Isikuandmeid (juhatuse liikmete nimed) ei ekspordita analüütilisse kihti. Andmebaasi ligipääsuandmed hoitakse .env failis
-[Kirjelda, millised isiku- või tundlikud andmed teie projektis esinevad (kui üldse) ja kuidas neid kaitsete. Isikuandmed peavad olema anonümiseeritud. Andmebaasi paroolid peavad tulema `.env` failist.]
+Kasutatakse ainult avalikke andmeid (avaandmed), mis ei vaja eraldi kaitset. Andmebaasi ligipääsuandmed hoitakse .env failis
+

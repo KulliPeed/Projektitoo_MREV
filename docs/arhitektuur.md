@@ -4,20 +4,26 @@
 
 ## Äriküsimus
 
-[Kirjuta ühe-kahe lausega oma äriküsimus täpselt. Näiteks: "Millistes kauplustes ja mis kellaaegadel on müügitõhusus (käive külastaja kohta) kõrgeim?"]
+Kui palju on maksuvõlas ettevõtteid, mille juhatus on muutunud viimase päeva jooksul ning milline on nende ettevõtete maksuvõla kogusumma päevase seisuga, jaotatuna võla vanuse gruppidesse (kuni 2 kuud, 2-5 kuud, 6-11 kuud, ≥ 1 aasta)?
 
 ## Mõõdikud
 
-1. [Esimene mõõdik — kirjelda, mida arvutate ja kuidas]
-2. [Teine mõõdik]
-3. [Kolmas mõõdik — vabatahtlik]
+1. Juhatuse muutus - ettevõttel loetakse juhatuse muutus toimunuks, kui võrreldes eelmise päeva (või viimase olemasoleva kuupäeva) andmetega:
+lisandus vähemalt üks uus juhatuse liige või
+vähemalt ühe varasema juhatuse liikme seos lõppes.
+2. Võla vanus päevades - arvutatakse EMTA andmetes veergude "Andmed on seisuga" ja "vanima tasumata nõude tasumise tähtpäev" vahe päevades
+3. võla vanuse grupp - klassifitseeritakse: 1–59 päeva (kuni 2 kuud)
+60–179 päeva (2–5 kuud)
+180–364 päeva (6–11 kuud)
+≥ 365 päeva (≥ 12 kuud / 1 aasta)
 
 ## Andmeallikad
 
 | Allikas | Tüüp | Ajas muutuv? | Roll |
 |---------|------|--------------|------|
-| [Nimi] | [API / CSV / DB] | Jah, [iga X tundi / päeva] | [Milleks kasutatakse?] |
-| [Nimi] | [seed / dim-tabel] | Ei, staatiline | [Milleks kasutatakse?] |
+| EMTA maksuvõlg (avaandmed) | CSV / XLSX | Jah, iga päev | sisend ettevõtete maksuvõla olemasolu ja selle vanuse tuvastamisel |
+| RIK Äriregistri ettevõtlusseosed | XML/JSON | Jah, iga päev | sisend juhatuse liikmete seoste ja nende muutuste tuvastamisel |
+| Aja dimensioon | dim-tabel | Ei, staatiline | Ajapõhiste analüüside lihtsustamiseks|
 
 ## Andmevoog
 
@@ -39,25 +45,27 @@ flowchart LR
 | Kiht | Roll |
 |------|------|
 | `staging` | Hoiab allika andmeid töötlemata kujul. |
+| `intermediate` | Puhastatud ja ühendatud andmed. |
 | `mart` | Hoiab transformeeritud ja ärilogikat sisaldavaid tabeleid. |
 
 ## Tööjaotus
 
 | Roll | Vastutus | Täitja |
 |------|----------|--------|
-| Andmeallika omanik | Kirjutab sissevõtu loogika, hoiab API-t töös | [Nimi] |
-| Transformatsioonide omanik | Kirjutab mart kihi mudelid ja mõõdikute arvutuse | [Nimi] |
-| Kvaliteedi omanik | Kirjutab testid ja vaatab läbi ebaõnnestunud kontrollid | [Nimi] |
-| Näidikulaua omanik | Ehitab näidikulaua ja seob selle äriküsimusega | [Nimi] |
+| Andmeallika omanik | Kirjutab sissevõtu loogika ja hoiab failide allalaadimise töös | Andrus |
+| Transformatsioonide omanik | Kirjutab mart kihi mudelid ja mõõdikute arvutuse | Andrus/Külli/Tuuli |
+| Kvaliteedi omanik | Kirjutab testid ja vaatab läbi ebaõnnestunud kontrollid | Tuuli/Külli |
+| Näidikulaua omanik | Ehitab näidikulaua, visualiseeringud seotuna äriküsimusega | Külli/Tuuli |
 
 ## Riskid
 
 | Risk | Mõju | Maandus |
 |------|------|---------|
-| [Risk 1 — näiteks: API ei vasta] | [Mis juhtub?] | [Kuidas maandad?] |
-| [Risk 2] | [Mis juhtub?] | [Kuidas maandad?] |
-| [Risk 3] | [Mis juhtub?] | [Kuidas maandad?] |
+| Risk 1 — EMTA andmed ei uuene | Puudulikud või valed tulemused | Viimase saadaoleva snapshoti kasutus |
+| [Risk 2 -  RIK andmed ei uuene] | Puudulikud või valed tulemused | Viimase saadaoleva snapshoti kasutus |
+| [Risk 3 - võla summa puudub] | ei klassifitseeru võlaga ettevõtteks | Kui viimases saadaolevas snapshotis võla vanus puudus, jätab ettevõtte kirje järgmisse kihti (intermediate) lisamata |
 
 ## Privaatsus ja turve
 
+Kasutatakse ainult avalikke andmeid (avaandmed), mis ei vaja eraldi kaitset. Isikuandmeid (juhatuse liikmete nimed) ei ekspordita analüütilisse kihti. Andmebaasi ligipääsuandmed hoitakse .env failis
 [Kirjelda, millised isiku- või tundlikud andmed teie projektis esinevad (kui üldse) ja kuidas neid kaitsete. Isikuandmed peavad olema anonümiseeritud. Andmebaasi paroolid peavad tulema `.env` failist.]

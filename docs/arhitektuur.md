@@ -11,19 +11,18 @@ Kui palju on maksuvõlas ettevõtteid, mille juhatus on muutunud viimase päeva 
 1. Juhatuse muutus - ettevõttel loetakse juhatuse muutus toimunuks, kui võrreldes eelmise päeva (või viimase olemasoleva kuupäeva) andmetega:
 lisandus vähemalt üks uus juhatuse liige või
 vähemalt ühe varasema juhatuse liikme seos lõppes.
-2. Võla vanus päevades - arvutatakse EMTA andmetes veergude "Andmed on seisuga" ja "vanima tasumata nõude tasumise tähtpäev" vahe päevades
-3. võla vanuse grupp - klassifitseeritakse: 1–59 päeva (kuni 2 kuud)
-60–179 päeva (2–5 kuud)
-180–364 päeva (6–11 kuud)
-≥ 365 päeva (≥ 12 kuud / 1 aasta)
+2. Võla vanus päevades - arvutatakse EMTA maksuvõla avaandmetes veergude "Andmed on seisuga" ja "vanima tasumata nõude tasumise tähtpäev" vahe päevades.
+3. võla vanuse grupp - maksuvõla vanuse päevade vahemik, klassifitseerituna: 1–59 päeva (kuni 2 kuud),
+60–179 päeva (2–5 kuud),
+180–364 päeva (6–11 kuud),
+≥ 365 päeva (≥ 12 kuud / 1 aasta).
 
 ## Andmeallikad
 
 | Allikas | Tüüp | Ajas muutuv? | Roll |
 |---------|------|--------------|------|
-| EMTA maksuvõlg (avaandmed) | CSV / XLSX | Jah, iga päev | sisend ettevõtete maksuvõla olemasolu ja selle vanuse tuvastamisel |
-| RIK Äriregistri ettevõtlusseosed | XML/JSON | Jah, iga päev | sisend juhatuse liikmete seoste ja nende muutuste tuvastamisel |
-| Aja dimensioon | dim-tabel | Ei, staatiline | Ajapõhiste analüüside lihtsustamiseks|
+| EMTA maksuvõla avaandmed(https://ncfailid.emta.ee/s/XKJLjtynFeYdGyC/download/maksuvolglaste_nimekiri.csv) | CSV / XLSX | Jah, iga päev | sisend ettevõtete maksuvõla olemasolu ja selle vanuse tuvastamisel |
+| RIK Äriregistri ettevõtlusseosed (https://avaandmed.ariregister.rik.ee/et/avaandmete-allalaadimine)| XML/JSON | Jah, iga päev | sisend juhatuse liikmete seoste ja nende muutuste tuvastamisel |
 
 ## Andmevoog
 

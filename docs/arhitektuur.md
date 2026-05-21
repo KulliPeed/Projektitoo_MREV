@@ -28,7 +28,7 @@ vähemalt ühe varasema juhatuse liikme seos lõppes.
 
 ```mermaid
 flowchart LR
-    source ["EMTA maksuvõla avaandmed"] --> ingest[Sissevõtt]
+    source [MTA andmed] --> ingest[Sissevõtt]
     ingest --> staging[(staging)]
     staging --> transform[Transformatsioon]
     transform --> mart[(mart)]

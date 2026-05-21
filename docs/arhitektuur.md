@@ -45,8 +45,8 @@ flowchart LR
 | Kiht | Roll |
 |------|------|
 | `staging` | Hoiab allika andmeid töötlemata kujul. |
-| `intermediate` | Puhastatud, ühtlustatud ja rikastatud andmed. |
-| `mart` | Hoiab transformeeritud ja ärilogikat sisaldavaid tabeleid. |
+| `intermediate` | Puhastatud, ühendatud, ühtlustatud ja rikastatud andmed. |
+| `mart` | Hoiab transformeeritud ja äriloogikat sisaldavaid tabeleid. |
 
 ## Tööjaotus
 

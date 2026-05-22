@@ -1,6 +1,7 @@
 # Arhitektuur
 
 > **Tuuli:MUUTSIN VISUAALI PAREMAKS JA TÄIENDASIN ANDMEVOO SKEEMI**
+> Kas ja kuidas tuua välja näidikulaual olukord, kus andmed jäid puudu?
 
 ## Äriküsimus
 
@@ -28,7 +29,7 @@ vähemalt ühe varasema juhatuse liikme seos lõppes.
 
 ```mermaid
 flowchart LR
-    source1[MTA andmed] --> ingest[Sissevõtt]
+    source1[EMTA maksuvõla andmed] --> ingest[Sissevõtt]
     source2[RIK äriregistri andmed] --> ingest
 
     ingest --> staging[(staging)]
@@ -42,7 +43,7 @@ flowchart LR
     mart --> dashboard[Näidikulaud]
     mart --> quality[Andmekvaliteedi testid]
 
-    scheduler[Scheduler] --> ingest
+    scheduler[Andmelaadimine, cron] --> ingest
 ```
 
 > Täpsusta diagrammi vastavalt oma projektile — lisa rohkem andmeallikaid, mudeleid või teenuseid.
@@ -70,10 +71,10 @@ flowchart LR
 
 | Risk | Mõju | Maandus |
 |------|------|---------|
-| Risk 1 — EMTA päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | Viimase saadaoleva snapshoti kasutus |
-| [Risk 2 -  RIK päeva andmed jäävad puudu] | Puudulikud või ebatäpsed tulemused | Viimase saadaoleva snapshoti kasutus |
-| [Risk 3 -  allikandmete struktuur on muutunud] | andmed jäävad uuendamata | Veateavitus |
-| [Risk 4 - võla summa puudub] | ei klassifitseeru võlaga ettevõtteks | Kui viimases saadaolevas snapshotis võla summa puudus, jätab ettevõtte kirje järgmisse kihti (intermediate) lisamata |
+| Risk 1 — EMTA päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | Veateavitus+uus andmete laadimise/sissevõtu käivitus  |
+| Risk 2 -  RIK päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | a. Veateavitus+uus andmete laadimise/sissevõtu käivitus; b. muutuse aruvutuses Viimase saadaoleva snapshoti kasutus |
+| Risk 3 -  allikandmete struktuur on muutunud | andmed jäävad uuendamata | Veateavitus+koodimuudatus ja andmete sissevõtu taaskäivitus |
+|[Risk 4 - võla summa puudub | ei klassifitseeru võlaga ettevõtteks | Kui viimases saadaolevas snapshotis võla summa puudus, jätab ettevõtte kirje järgmisse kihti (intermediate) lisamata |
 
 ## Privaatsus ja turve
 

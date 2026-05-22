@@ -1,8 +1,5 @@
 # Arhitektuur
 
-> **Tuuli:MUUTSIN VISUAALI PAREMAKS JA TÄIENDASIN ANDMEVOO SKEEMI**
-> Kas ja kuidas tuua välja näidikulaual olukord, kus andmed jäid puudu?
-
 ## Äriküsimus
 
 Kui palju on maksuvõlas ettevõtteid, mille juhatus on muutunud viimase päeva jooksul ning milline on nende ettevõtete maksuvõla kogusumma päevase seisuga, jaotatuna võla vanuse gruppidesse (kuni 2 kuud, 2-5 kuud, 6-11 kuud, ≥ 1 aasta)?
@@ -40,22 +37,82 @@ flowchart LR
 
     transform2 --> mart[(mart)]
 
-    mart --> dashboard[Näidikulaud]
+    mart --> dashboard[Näidikulaud, Superset]
     mart --> quality[Andmekvaliteedi testid]
 
     scheduler[Andmelaadimine, cron] --> ingest
 ```
 
-> Täpsusta diagrammi vastavalt oma projektile — lisa rohkem andmeallikaid, mudeleid või teenuseid.
-> 
-> Andmevoog vajab veel põhjalikumat läbi mõtlemist ja täiendamist!
+```mermaid
+flowchart LR
+    %% Andmeallikad
+    source1[EMTA maksuvõla andmed] --> ingest["Sissevõtt (Python / SQL)"]
+    source2[RIK äriregistri andmed] --> ingest
+
+    %% Scheduler / orkestreerimine
+    cron["Cron (scheduler)"] --> ingest
+
+    %% Andmebaas (PostgreSQL)
+    subgraph db[PostgreSQL]
+        staging[(staging)]
+        intermediate[(intermediate)]
+        mart[(mart)]
+    end
+
+    %% Andmetöötlus
+    ingest --> staging
+    staging --> transform1[Puhastamine, ühtlustamine]
+
+    transform1 --> intermediate
+    intermediate --> transform2[Ühendamine, rikastamine]
+
+    transform2 --> mart
+
+    %% Tarbimine
+    mart --> dashboard["Näidikulaud (Superset)"]
+    mart --> quality[Andmekvaliteedi testid]
+```
+
+```mermaid
+flowchart LR
+    %% Andmeallikad
+    source1[EMTA maksuvõla andmed] --> ingest["Sissevõtt (Python / SQL)"]
+    source2[RIK äriregistri andmed] --> ingest
+
+    %% Scheduler / orkestreerimine
+    cron["Cron (scheduler)"] --> ingest
+
+    %% Andmebaas (PostgreSQL)
+    subgraph db[PostgreSQL]
+        staging[(staging)]
+        intermediate[(intermediate)]
+        mart[(mart)]
+    end
+
+    %% Andmetöötlus
+    ingest --> staging
+    staging --> transform1[Puhastamine, ühtlustamine]
+
+    transform1 --> intermediate
+    intermediate --> transform2[Ühendamine, rikastamine]
+
+    transform2 --> mart
+
+    %% Tarbimine
+    mart --> dashboard["Näidikulaud (Superset)"]
+    staging -->  source3[Andmekvaliteedi testid]
+    intermediate --> source3[Andmekvaliteedi testid]
+    mart --> source3[Andmekvaliteedi testid]
+  
+```
+> Millise andmevoo skeemi alles jätame?
 
 ## Andmebaasi kihid
 
 | Kiht | Roll |
 |------|------|
 | `staging` | Hoiab allika andmeid töötlemata kujul. |
-| `intermediate` | Puhastatud, ühendatud, ühtlustatud ja rikastatud andmed. |
+| `intermediate` | Puhastatud ja ühtlustatud andmed. |
 | `mart` | Hoiab transformeeritud ja äriloogikat sisaldavaid tabeleid. |
 
 ## Tööjaotus
@@ -67,14 +124,15 @@ flowchart LR
 | Kvaliteedi omanik | Kirjutab testid ja vaatab läbi ebaõnnestunud kontrollid | Tuuli/Külli |
 | Näidikulaua omanik | Ehitab näidikulaua, visualiseeringud seotuna äriküsimusega | Külli/Tuuli |
 
+>Iga rolli juurde märgitud esimene isik on põhivastutaja ja teised märgitud on kaasvastutajad
 ## Riskid
 
 | Risk | Mõju | Maandus |
 |------|------|---------|
 | Risk 1 — EMTA päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | Veateavitus+uus andmete laadimise/sissevõtu käivitus  |
-| Risk 2 -  RIK päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | a. Veateavitus+uus andmete laadimise/sissevõtu käivitus; b. muutuse aruvutuses Viimase saadaoleva snapshoti kasutus |
+| Risk 2 -  RIK päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | a) Veateavitus+uus andmete laadimise/sissevõtu käivitus; b) muutuse arvutuses viimase saadaoleva snapshoti kasutus |
 | Risk 3 -  allikandmete struktuur on muutunud | andmed jäävad uuendamata | Veateavitus+koodimuudatus ja andmete sissevõtu taaskäivitus |
-|[Risk 4 - võla summa puudub | ei klassifitseeru võlaga ettevõtteks | Kui viimases saadaolevas snapshotis võla summa puudus, jätab ettevõtte kirje järgmisse kihti (intermediate) lisamata |
+| Risk 4 - võla summa puudub | ei klassifitseeru võlaga ettevõtteks | Kui viimases saadaolevas snapshotis võla summa puudus, jätab ettevõtte kirje järgmisse kihti (intermediate) lisamata |
 
 ## Privaatsus ja turve
 

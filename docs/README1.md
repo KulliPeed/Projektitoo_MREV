@@ -10,12 +10,13 @@ erDiagram
         int aasta
     }
     DIM_ETTEVOTE {
+        int id
         string registrikood PK
         string nimi
     }
     FACT_MAKSUVOLG {
         int id PK
-        string registrikood FK
+        int dim_ettevote_id FK
         date kuupaev FK
         float maksuvola_summa
         string maksuvola_vanuse_grupp

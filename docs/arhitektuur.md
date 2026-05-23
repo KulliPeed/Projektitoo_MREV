@@ -21,7 +21,7 @@ vähemalt ühe varasema juhatuse liikme seos lõppes.
 |---------|------|--------------|------|
 | [EMTA maksuvõla avaandmed](https://ncfailid.emta.ee/s/XKJLjtynFeYdGyC/download/maksuvolglaste_nimekiri.csv) | CSV | Jah, 1 kord päevas | Sisend ettevõtete maksuvõla olemasolu ja selle vanuse tuvastamisel |
 | [RIK Äriregistri avaandmed, kaardile kantud isikud](https://avaandmed.ariregister.rik.ee/sites/default/files/avaandmed/ettevotja_rekvisiidid__kaardile_kantud_isikud.json.zip) | JSON | Jah, 1 kord päevas | Sisend juhatuse liikmete seoste ja nende muutuste tuvastamisel |
-
+> Esimesed katsetused tehtud, andmete sissevõtt õnnestub.
 ## Andmevoog
 
 ```mermaid

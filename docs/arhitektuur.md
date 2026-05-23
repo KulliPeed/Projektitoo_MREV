@@ -26,55 +26,6 @@ vähemalt ühe varasema juhatuse liikme seos lõppes.
 
 ```mermaid
 flowchart LR
-    source1[EMTA maksuvõla andmed] --> ingest[Sissevõtt]
-    source2[RIK äriregistri andmed] --> ingest
-
-    ingest --> staging[(staging)]
-    staging --> transform1[Transformatsioon 1]
-
-    transform1 --> intermediate[(intermediate)]
-    intermediate --> transform2[Transformatsioon 2]
-
-    transform2 --> mart[(mart)]
-
-    mart --> dashboard[Näidikulaud, Superset]
-    mart --> quality[Andmekvaliteedi testid]
-
-    scheduler[Andmelaadimine, cron] --> ingest
-```
-
-```mermaid
-flowchart LR
-    %% Andmeallikad
-    source1[EMTA maksuvõla andmed] --> ingest["Sissevõtt (Python / SQL)"]
-    source2[RIK äriregistri andmed] --> ingest
-
-    %% Scheduler / orkestreerimine
-    cron["Cron (scheduler)"] --> ingest
-
-    %% Andmebaas (PostgreSQL)
-    subgraph db[PostgreSQL]
-        staging[(staging)]
-        intermediate[(intermediate)]
-        mart[(mart)]
-    end
-
-    %% Andmetöötlus
-    ingest --> staging
-    staging --> transform1[Puhastamine, ühtlustamine]
-
-    transform1 --> intermediate
-    intermediate --> transform2[Ühendamine, rikastamine]
-
-    transform2 --> mart
-
-    %% Tarbimine
-    mart --> dashboard["Näidikulaud (Superset)"]
-    mart --> quality[Andmekvaliteedi testid]
-```
-
-```mermaid
-flowchart LR
     %% Andmeallikad
     source1[EMTA maksuvõla andmed] --> ingest["Sissevõtt (Python / SQL)"]
     source2[RIK äriregistri andmed] --> ingest
@@ -105,7 +56,6 @@ flowchart LR
     mart --> source3[Andmekvaliteedi testid]
   
 ```
-> Millise andmevoo skeemi alles jätame?
 
 ## Andmebaasi kihid
 

@@ -1,0 +1,17 @@
+.env
+*.log
+logs/
+backups/
+data/raw/
+data/extracted/
+data/tmp/
+*.dump
+*.backup
+*.zip
+*.gz
+*.7z
+*.json
+.venv/
+__pycache__/
+*.pyc
+postgres_data/

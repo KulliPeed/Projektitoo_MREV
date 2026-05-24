@@ -5,7 +5,7 @@
 ## Mis on valmis
 
 - [ ] Docker Compose käivitab kõik teenused
-- [ ] Andmeid saadakse allikast kätte
+- [x] Andmeid saadakse allikast kätte
 - [ ] Andmed laetakse `staging` kihti
 - [ ] Vähemalt üks transformatsioon toimib
 - [ ] Vähemalt üks näidikulaud on nähtaval

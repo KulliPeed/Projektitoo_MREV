@@ -1,0 +1,23 @@
+services:
+  superset:
+    build:
+      context: ./superset
+    container_name: andmeprojekt_superset
+    depends_on:
+      - postgres
+    env_file:
+      - .env.superset
+    environment:
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+    volumes:
+      - ./superset/superset_config.py:/app/pythonpath/superset_config.py:ro
+    ports:
+      - "127.0.0.1:8088:8088"
+    command: >
+      /bin/bash -c "gunicorn
+      -w 2
+      -k gthread
+      --timeout 300
+      -b 0.0.0.0:8088
+      'superset.app:create_app()'"
+    restart: unless-stopped

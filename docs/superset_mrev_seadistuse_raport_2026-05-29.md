@@ -1,6 +1,6 @@
 # Superseti MREV seadistuse raport
 
-Töö tehtud: 2026-05-29 17:21:59
+Töö tehtud: 2026-05-29 19:13:42
 
 ## Kontrollid ja API
 
@@ -27,22 +27,22 @@ Töö tehtud: 2026-05-29 17:21:59
 
 ## Dataset refresh
 
-- `mart.v_dashboard_kpi`: ok. Dataset columns refresh õnnestus.
-- `mart.v_maksuvolg_vanusegruppide_kaupa`: ok. Dataset columns refresh õnnestus.
-- `mart.v_maksuvolg_juhatuse_muutus_vanusegrupp`: ok. Dataset columns refresh õnnestus.
-- `mart.v_top_maksuvolglased`: ok. Dataset columns refresh õnnestus.
-- `mart.v_maksuvolglased_juhatuse_muutusega`: ok. Dataset columns refresh õnnestus.
-- `mart.v_viimased_maksuvolglased_rik_andmetega`: ok. Dataset columns refresh õnnestus.
+- `mart.v_dashboard_kpi`: vahele jäetud (ID 1). Dataset refresh jäeti vahele, sest see Superseti versioon proovib datetime detectoris schema nime PostgreSQL catalog'ina kasutada.
+- `mart.v_maksuvolg_vanusegruppide_kaupa`: vahele jäetud (ID 2). Dataset refresh jäeti vahele, sest see Superseti versioon proovib datetime detectoris schema nime PostgreSQL catalog'ina kasutada.
+- `mart.v_maksuvolg_juhatuse_muutus_vanusegrupp`: vahele jäetud (ID 3). Dataset refresh jäeti vahele, sest see Superseti versioon proovib datetime detectoris schema nime PostgreSQL catalog'ina kasutada.
+- `mart.v_top_maksuvolglased`: vahele jäetud (ID 4). Dataset refresh jäeti vahele, sest see Superseti versioon proovib datetime detectoris schema nime PostgreSQL catalog'ina kasutada.
+- `mart.v_maksuvolglased_juhatuse_muutusega`: vahele jäetud (ID 5). Dataset refresh jäeti vahele, sest see Superseti versioon proovib datetime detectoris schema nime PostgreSQL catalog'ina kasutada.
+- `mart.v_viimased_maksuvolglased_rik_andmetega`: vahele jäetud (ID 6). Dataset refresh jäeti vahele, sest see Superseti versioon proovib datetime detectoris schema nime PostgreSQL catalog'ina kasutada.
 
 ## Dashboard ja chartid
 
 - Dashboard: olemas (ID 1). Dashboard oli juba olemas.
 - Dashboardi chartide sidumine: ok (ID 1). Chartide sidumine dashboardiga õnnestus API kaudu.
-- MREV KPI - maksuvõlglaste arv: olemas (ID 1). Chart oli juba olemas.
-- MREV KPI - maksuvõlg kokku: olemas (ID 2). Chart oli juba olemas.
-- MREV KPI - juhatuse muutusega maksuvõlglased: olemas (ID 3). Chart oli juba olemas.
-- MREV - maksuvõlg vanusegrupi kaupa: olemas (ID 4). Chart oli juba olemas.
-- MREV - top maksuvõlglased: olemas (ID 5). Chart oli juba olemas.
+- MREV KPI - maksuvõlglaste arv: olemas (ID 1). Chart oli juba olemas; query_context uuendati.
+- MREV KPI - maksuvõlg kokku: olemas (ID 2). Chart oli juba olemas; query_context uuendati.
+- MREV KPI - juhatuse muutusega maksuvõlglased: olemas (ID 3). Chart oli juba olemas; query_context uuendati.
+- MREV - maksuvõlg vanusegrupi kaupa: olemas (ID 4). Chart oli juba olemas; query_context uuendati.
+- MREV - top maksuvõlglased: olemas (ID 5). Chart oli juba olemas; query_context uuendati.
 
 ## Kasutajad
 

@@ -55,6 +55,7 @@ perform_refresh() {
   set -e
   echo "[$(date --iso-8601=seconds)] MART refresh algas"
   run_sql "Loon MART vaated" "db/migrations/100_create_mart_views.sql"
+  run_sql "Varskendan Superseti MART cache" "db/migrations/110_create_mart_superset_cache.sql"
   run_sql "Kaivitan MART kvaliteedikontrollid" "quality/030_mart_quality_checks.sql"
   print_summary
 }

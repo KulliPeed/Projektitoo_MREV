@@ -356,7 +356,11 @@ def ensure_datasets(client: SupersetClient, summary: RunSummary, db_id: int) -> 
             ds_id = int(existing["id"])
             summary.datasets[table_name] = ApiResult("olemas", "Dataset oli juba olemas.", ds_id)
             dataset_ids[table_name] = ds_id
-            refresh_dataset(client, summary, ds_id, table_name)
+            summary.dataset_refresh[table_name] = ApiResult(
+                "vahele jäetud",
+                "Dataset refresh jäeti vahele, sest see Superseti versioon proovib datetime detectoris schema nime PostgreSQL catalog'ina kasutada.",
+                ds_id,
+            )
             continue
 
         payload = {"database": db_id, "schema": "mart", "table_name": table_name}
@@ -370,7 +374,11 @@ def ensure_datasets(client: SupersetClient, summary: RunSummary, db_id: int) -> 
                 ds_id = int(existing["id"])
             summary.datasets[table_name] = ApiResult("loodud", "Dataset loodi Superseti API kaudu.", ds_id)
             dataset_ids[table_name] = ds_id
-            refresh_dataset(client, summary, ds_id, table_name)
+            summary.dataset_refresh[table_name] = ApiResult(
+                "vahele jäetud",
+                "Dataset refresh jäeti vahele, sest see Superseti versioon proovib datetime detectoris schema nime PostgreSQL catalog'ina kasutada.",
+                ds_id,
+            )
         except Exception as exc:  # noqa: BLE001
             summary.datasets[table_name] = ApiResult(
                 "ebaõnnestus",
@@ -379,14 +387,51 @@ def ensure_datasets(client: SupersetClient, summary: RunSummary, db_id: int) -> 
     return dataset_ids
 
 
-def chart_payload(name: str, viz_type: str, dataset_id: int, params: dict[str, Any]) -> dict[str, Any]:
+def adhoc_metric(column: str, label: str) -> dict[str, Any]:
+    return {
+        "aggregate": "SUM",
+        "column": {"column_name": column},
+        "expressionType": "SIMPLE",
+        "hasCustomLabel": True,
+        "label": label,
+    }
+
+
+def base_query(**overrides: Any) -> dict[str, Any]:
+    query: dict[str, Any] = {
+        "annotation_layers": [],
+        "extras": {"where": "", "having": ""},
+        "filters": [],
+        "is_timeseries": False,
+        "time_range": "No filter",
+    }
+    query.update(overrides)
+    return query
+
+
+def chart_payload(
+    name: str,
+    viz_type: str,
+    dataset_id: int,
+    params: dict[str, Any],
+    query: dict[str, Any],
+) -> dict[str, Any]:
     params = {"datasource": f"{dataset_id}__table", "viz_type": viz_type, **params}
+    query_context = {
+        "datasource": {"id": dataset_id, "type": "table"},
+        "force": False,
+        "queries": [query],
+        "form_data": params,
+        "result_format": "json",
+        "result_type": "full",
+    }
     return {
         "slice_name": name,
         "viz_type": viz_type,
         "datasource_id": dataset_id,
         "datasource_type": "table",
         "params": json.dumps(params, ensure_ascii=False),
+        "query_context": json.dumps(query_context, ensure_ascii=False),
     }
 
 
@@ -406,25 +451,23 @@ def chart_definitions(dataset_ids: dict[str, int]) -> list[dict[str, Any]]:
                 "Juhatuse muutusega maksuvõlglased",
             ),
         ):
+            metric = adhoc_metric(column, label)
             charts.append(
                 chart_payload(
                     name,
                     "big_number_total",
                     kpi_dataset,
                     {
-                        "metric": {
-                            "aggregate": "SUM",
-                            "column": {"column_name": column},
-                            "expressionType": "SIMPLE",
-                            "label": label,
-                        },
+                        "metric": metric,
                         "adhoc_filters": [],
                         "time_range": "No filter",
                         "y_axis_format": "SMART_NUMBER",
                     },
+                    base_query(columns=[], metrics=[metric], row_limit=10000),
                 )
             )
     if age_dataset:
+        metric = adhoc_metric("maksuvolg_summa", "Maksuvõlg")
         charts.append(
             chart_payload(
                 "MREV - maksuvõlg vanusegrupi kaupa",
@@ -432,34 +475,49 @@ def chart_definitions(dataset_ids: dict[str, int]) -> list[dict[str, Any]]:
                 age_dataset,
                 {
                     "groupby": ["volg_vanuse_grupp"],
-                    "metrics": [
-                        {
-                            "aggregate": "SUM",
-                            "column": {"column_name": "maksuvolg_summa"},
-                            "expressionType": "SIMPLE",
-                            "label": "Maksuvõlg",
-                        }
-                    ],
+                    "metrics": [metric],
                     "adhoc_filters": [],
                     "time_range": "No filter",
                     "order_desc": True,
+                    "row_limit": 10000,
                     "y_axis_format": "SMART_NUMBER",
                 },
+                base_query(columns=["volg_vanuse_grupp"], metrics=[metric], row_limit=10000),
             )
         )
     if top_dataset:
+        columns = [
+            "mta_data_as_of",
+            "rik_snapshot_date",
+            "registrikood",
+            "nimi",
+            "maksuvolg",
+            "volg_vanuse_grupp",
+            "juhatus_muutus",
+            "lisatud_juhatuse_liikmeid",
+            "eemaldatud_juhatuse_liikmeid",
+            "leitud_rikist",
+        ]
         charts.append(
             chart_payload(
                 "MREV - top maksuvõlglased",
                 "table",
                 top_dataset,
                 {
-                    "all_columns": [],
+                    "query_mode": "raw",
+                    "all_columns": columns,
                     "order_by_cols": ["[\"maksuvolg\", false]"],
+                    "row_limit": 25,
                     "page_length": 25,
                     "time_range": "No filter",
                     "table_timestamp_format": "smart_date",
                 },
+                base_query(
+                    columns=columns,
+                    metrics=[],
+                    orderby=[["maksuvolg", False]],
+                    row_limit=25,
+                ),
             )
         )
     return charts
@@ -473,7 +531,15 @@ def ensure_charts(client: SupersetClient, summary: RunSummary, dataset_ids: dict
         existing = find_by_name(existing_charts, "slice_name", value=name)
         if existing:
             chart_id = int(existing["id"])
-            summary.charts[name] = ApiResult("olemas", "Chart oli juba olemas.", chart_id)
+            try:
+                client.put_json(f"/api/v1/chart/{chart_id}", payload)
+                summary.charts[name] = ApiResult("olemas", "Chart oli juba olemas; query_context uuendati.", chart_id)
+            except Exception as exc:  # noqa: BLE001
+                summary.charts[name] = ApiResult(
+                    "ebaõnnestus",
+                    "Olemasoleva charti uuendamine API kaudu ebaõnnestus: " + client.sanitize(exc),
+                    chart_id,
+                )
             chart_ids.append(chart_id)
             continue
 
@@ -493,7 +559,6 @@ def ensure_charts(client: SupersetClient, summary: RunSummary, dataset_ids: dict
                 "Charti loomine API kaudu ebaõnnestus: " + client.sanitize(exc),
             )
     return chart_ids
-
 
 def ensure_dashboard(client: SupersetClient, summary: RunSummary, chart_ids: list[int]) -> None:
     existing = find_by_name(

@@ -1,4 +1,7 @@
 .env
+.env.*
+.env.superset
+!.env.superset.example
 *.log
 logs/
 backups/

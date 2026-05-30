@@ -4,6 +4,7 @@
 !.env.superset.example
 *.log
 logs/
+docs/superset*.md
 backups/
 data/raw/
 data/extracted/

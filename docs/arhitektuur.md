@@ -27,7 +27,7 @@ vähemalt ühe varasema juhatuse liikme seos lõppes.
 ```mermaid
 flowchart LR
     %% Andmeallikad
-    source1[EMTA maksuvõla andmed] --> ingest["Sissevõtt (Python / SQL)"]
+    source1[EMTA maksuvõla andmed] --> ingest["Sissevõtt<br/>bash wrapper/Python/SQL"]
     source2[RIK äriregistri andmed] --> ingest
 
     %% Scheduler / orkestreerimine
@@ -35,24 +35,24 @@ flowchart LR
 
     %% Andmebaas (PostgreSQL)
     subgraph db[PostgreSQL]
+        raw[(raw)]
         staging[(staging)]
-        intermediate[(intermediate)]
         mart[(mart)]
     end
 
     %% Andmetöötlus
-    ingest --> staging
-    staging --> transform1[Puhastamine, ühtlustamine]
+    ingest --> raw
+    raw --> transform1["Puhastamine, ühtlustamine<br/>bash wrapper/Python/SQL"]
 
-    transform1 --> intermediate
-    intermediate --> transform2[Ühendamine, rikastamine]
+    transform1 --> staging
+    staging --> transform2["Ühendamine, rikastamine<br/>bash wrapper/Python/SQL"]
 
     transform2 --> mart
 
     %% Tarbimine
     mart --> dashboard["Näidikulaud (Superset)"]
-    staging -->  source3[Andmekvaliteedi testid]
-    intermediate --> source3[Andmekvaliteedi testid]
+    raw -->  source3[Andmekvaliteedi testid]
+    staging --> source3[Andmekvaliteedi testid]
     mart --> source3[Andmekvaliteedi testid]
   
 ```
@@ -61,8 +61,8 @@ flowchart LR
 
 | Kiht | Roll |
 |------|------|
-| `staging` | Hoiab allika andmeid töötlemata kujul. |
-| `intermediate` | Puhastatud ja ühtlustatud andmed. |
+| `raw` | Hoiab allika andmeid töötlemata kujul. |
+| `staging` | Puhastatud ja ühtlustatud andmed. |
 | `mart` | Hoiab transformeeritud ja äriloogikat sisaldavaid tabeleid. |
 
 ## Tööjaotus

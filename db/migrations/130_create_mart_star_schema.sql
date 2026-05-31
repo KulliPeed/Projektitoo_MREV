@@ -3,8 +3,8 @@
 
 -- MART_STAR grain:
 -- one fact row = one company for one MTA data_as_of date,
--- using the latest MTA snapshot currently available in STAGE.
--- Source rows are aggregated by registrikood inside that latest snapshot.
+-- using the latest available MTA snapshot for each data_as_of date.
+-- Source rows are aggregated by registrikood inside each selected snapshot.
 
 BEGIN;
 
@@ -140,34 +140,45 @@ INSERT INTO mart_star.dim_ettevote (
     latest_mta_data_as_of,
     latest_rik_snapshot_date
 )
-WITH latest_mta_snapshot AS (
-    SELECT max(snapshot_date) AS snapshot_date
+WITH selected_mta_snapshots AS (
+    SELECT
+        data_as_of,
+        max(snapshot_date) AS snapshot_date
     FROM stage.mta_maksuvolglased
+    WHERE data_as_of IS NOT NULL
+    GROUP BY data_as_of
 ),
 latest_rik_snapshot AS (
     SELECT max(snapshot_date) AS snapshot_date
     FROM stage.rik_ettevotted
 ),
-latest_mta_rows AS (
+selected_mta_rows AS (
     SELECT
-        NULLIF(btrim(registrikood), '') AS registrikood,
-        NULLIF(btrim(nimi), '') AS nimi,
-        COALESCE(maksuvolg, 0) AS maksuvolg,
-        snapshot_date,
-        data_as_of,
-        row_no
-    FROM stage.mta_maksuvolglased
-    WHERE snapshot_date = (SELECT snapshot_date FROM latest_mta_snapshot)
+        NULLIF(btrim(m.registrikood), '') AS registrikood,
+        NULLIF(btrim(m.nimi), '') AS nimi,
+        COALESCE(m.maksuvolg, 0) AS maksuvolg,
+        m.snapshot_date,
+        m.data_as_of,
+        m.row_no
+    FROM stage.mta_maksuvolglased m
+    JOIN selected_mta_snapshots s
+      ON s.data_as_of = m.data_as_of
+     AND s.snapshot_date = m.snapshot_date
 ),
-mta_by_company AS (
-    SELECT
+latest_mta_name_by_company AS (
+    SELECT DISTINCT ON (registrikood)
         registrikood,
-        (array_agg(nimi ORDER BY maksuvolg DESC NULLS LAST, row_no) FILTER (WHERE nimi IS NOT NULL))[1] AS mta_nimi,
-        max(snapshot_date) AS latest_mta_snapshot_date,
-        max(data_as_of) AS latest_mta_data_as_of
-    FROM latest_mta_rows
+        nimi AS mta_nimi,
+        snapshot_date AS latest_mta_snapshot_date,
+        data_as_of AS latest_mta_data_as_of
+    FROM selected_mta_rows
     WHERE registrikood IS NOT NULL
-    GROUP BY registrikood
+    ORDER BY
+        registrikood,
+        data_as_of DESC,
+        snapshot_date DESC,
+        maksuvolg DESC NULLS LAST,
+        row_no DESC
 ),
 rik_latest AS (
     SELECT DISTINCT ON (NULLIF(btrim(registrikood), ''))
@@ -191,7 +202,7 @@ SELECT
     m.latest_mta_snapshot_date,
     m.latest_mta_data_as_of,
     (SELECT snapshot_date FROM latest_rik_snapshot) AS latest_rik_snapshot_date
-FROM mta_by_company m
+FROM latest_mta_name_by_company m
 LEFT JOIN rik_latest r ON r.registrikood = m.registrikood;
 
 INSERT INTO mart_star.fact_maksuvolg (
@@ -214,34 +225,40 @@ INSERT INTO mart_star.fact_maksuvolg (
     eelmine_juhatuse_liikmete_arv,
     leitud_rikist
 )
-WITH latest_mta_snapshot AS (
-    SELECT max(snapshot_date) AS snapshot_date
+WITH selected_mta_snapshots AS (
+    SELECT
+        data_as_of,
+        max(snapshot_date) AS snapshot_date
     FROM stage.mta_maksuvolglased
+    WHERE data_as_of IS NOT NULL
+    GROUP BY data_as_of
 ),
 latest_mta_rows AS (
     SELECT
-        NULLIF(btrim(registrikood), '') AS registrikood,
-        snapshot_date,
-        data_as_of,
-        COALESCE(maksuvolg, 0) AS maksuvolg,
-        COALESCE(sh_vaidlustatud, 0) AS sh_vaidlustatud,
-        COALESCE(sh_tasumisgraafikus, 0) AS sh_tasumisgraafikus,
-        volg_vanus_paevades
-    FROM stage.mta_maksuvolglased
-    WHERE snapshot_date = (SELECT snapshot_date FROM latest_mta_snapshot)
+        NULLIF(btrim(m.registrikood), '') AS registrikood,
+        m.snapshot_date,
+        m.data_as_of,
+        COALESCE(m.maksuvolg, 0) AS maksuvolg,
+        COALESCE(m.sh_vaidlustatud, 0) AS sh_vaidlustatud,
+        COALESCE(m.sh_tasumisgraafikus, 0) AS sh_tasumisgraafikus,
+        m.volg_vanus_paevades
+    FROM stage.mta_maksuvolglased m
+    JOIN selected_mta_snapshots s
+      ON s.data_as_of = m.data_as_of
+     AND s.snapshot_date = m.snapshot_date
 ),
 mta_by_company AS (
     SELECT
         registrikood,
         max(snapshot_date) AS mta_snapshot_date,
-        max(data_as_of) AS mta_data_as_of,
+        data_as_of AS mta_data_as_of,
         COALESCE(sum(maksuvolg), 0)::numeric(18,2) AS maksuvola_summa,
         COALESCE(sum(sh_vaidlustatud), 0)::numeric(18,2) AS vaidlustatud_summa,
         COALESCE(sum(sh_tasumisgraafikus), 0)::numeric(18,2) AS tasumisgraafikus_summa,
         max(volg_vanus_paevades) AS volg_vanus_paevades
     FROM latest_mta_rows
     WHERE registrikood IS NOT NULL
-    GROUP BY registrikood
+    GROUP BY registrikood, data_as_of
 ),
 mta_with_group AS (
     SELECT
@@ -260,6 +277,13 @@ latest_dates AS (
         latest_rik_snapshot_date,
         previous_rik_snapshot_date
     FROM mart.v_latest_dates
+),
+rik_latest AS (
+    SELECT DISTINCT
+        NULLIF(btrim(r.registrikood), '') AS registrikood
+    FROM stage.rik_ettevotted r
+    JOIN latest_dates d ON d.latest_rik_snapshot_date = r.snapshot_date
+    WHERE NULLIF(btrim(r.registrikood), '') IS NOT NULL
 )
 SELECT
     e.ettevote_id AS dim_ettevote_id,
@@ -279,13 +303,14 @@ SELECT
     COALESCE(j.eemaldatud_juhatuse_liikmeid, 0)::integer AS eemaldatud_juhatuse_liikmeid,
     COALESCE(j.praegune_juhatuse_liikmete_arv, 0)::integer AS praegune_juhatuse_liikmete_arv,
     COALESCE(j.eelmine_juhatuse_liikmete_arv, 0)::integer AS eelmine_juhatuse_liikmete_arv,
-    e.leitud_rikist
+    (r.registrikood IS NOT NULL) AS leitud_rikist
 FROM mta_with_group m
 JOIN mart_star.dim_ettevote e ON e.registrikood = m.registrikood
 CROSS JOIN latest_dates d
 LEFT JOIN mart.v_juhatuse_muutused_viimane_paev j
        ON j.rik_snapshot_date = d.latest_rik_snapshot_date
-      AND j.registrikood = m.registrikood;
+      AND j.registrikood = m.registrikood
+LEFT JOIN rik_latest r ON r.registrikood = m.registrikood;
 
 CREATE INDEX IF NOT EXISTS idx_mart_star_fact_ettevote
     ON mart_star.fact_maksuvolg(dim_ettevote_id);

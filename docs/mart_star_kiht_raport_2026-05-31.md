@@ -29,10 +29,12 @@ Failid:
 
 ```text
 üks rida = üks ettevõte ühe MTA andmeseisu kuupäeva kohta,
-kasutades viimast STAGE-is olemasolevat MTA snapshoti.
+kasutades iga data_as_of kuupäeva kohta hiliseimat STAGE-is olemasolevat MTA snapshoti.
 ```
 
-Viimane kasutatud MTA snapshot oli `2026-05-31`, andmeseisu kuupäevaga `2026-05-30`. Kui samal registrikoodil oli selles snapshotis mitu rida, koondati read üheks faktireaks registrikoodi lõikes. Faktitabeli unikaalsus on `UNIQUE (dim_ettevote_id, kuupaev)`, sest grain on ettevõte + MTA andmeseisu kuupäev.
+Kui sama `data_as_of` kuupäev esineb mitmes MTA snapshotis, valitakse selle andmeseisu hiliseim snapshot. Näiteks `2026-05-26` andmeseis oli STAGE-is kahes snapshotis; faktis kasutatakse selle kuupäeva jaoks ainult hilisemat snapshotit.
+
+Faktitabeli unikaalsus on `UNIQUE (dim_ettevote_id, kuupaev)`, sest grain on ettevõte + MTA andmeseisu kuupäev.
 
 ## Allikad
 
@@ -44,7 +46,7 @@ Kasutatud allikad:
 - `mart.v_latest_dates`
 - `mart.v_juhatuse_muutused_viimane_paev`
 
-RAW tabeleid tähtmudeli koostamisel ei kasutatud.
+RAW tabeleid tähtmudeli koostamisel ei kasutatud. Juhatuse muutuse lipp kasutab olemasolevat `mart.v_juhatuse_muutused_viimane_paev` vaadet, et `mart_star` refresh püsiks sama töökindel kui senine Superseti MART kiht.
 
 ## Vanusegrupid
 
@@ -65,32 +67,47 @@ Refresh käivitati skriptiga:
 scripts/refresh_mart_star.sh
 ```
 
-Logi:
+Lõplik edukas logi:
 
 ```text
-logs/mart_star_refresh_2026-05-31_142044.log
+logs/mart_star_refresh_2026-05-31_171050.log
 ```
 
 Kokkuvõte:
 
 | Näitaja | Väärtus |
 | --- | ---: |
-| `dim_ettevote` ridu | 18 082 |
+| `dim_ettevote` ridu | 22 366 |
 | `dim_aeg` ridu | 13 |
 | `dim_vanuse_grupp` ridu | 4 |
-| `fact_maksuvolg` ridu | 18 082 |
-| Faktide maksuvõla summa | 304 741 553.37 |
-| Juhatuse muutusega faktiridu | 8 |
-| RIK-ist leitud ettevõtteid faktis | 17 795 |
+| `fact_maksuvolg` ridu | 172 193 |
+| Faktis MTA andmeseisu kuupäevi | 9 |
+| Faktide maksuvõla summa | 2 826 491 012.76 |
+| Juhatuse muutusega faktiridu | 72 |
+| RIK-ist leitud faktiridu | 169 468 |
+
+Kuupäevade lõikes:
+
+| Kuupäev | Faktiridu | Maksuvõla summa |
+| --- | ---: | ---: |
+| `2026-05-21` | 21 560 | 336 548 235.87 |
+| `2026-05-22` | 20 023 | 319 542 775.35 |
+| `2026-05-23` | 19 448 | 315 391 629.49 |
+| `2026-05-24` | 19 354 | 314 862 986.65 |
+| `2026-05-26` | 18 721 | 311 235 643.19 |
+| `2026-05-27` | 18 479 | 310 246 935.92 |
+| `2026-05-28` | 18 307 | 307 576 101.24 |
+| `2026-05-29` | 18 219 | 306 345 151.68 |
+| `2026-05-30` | 18 082 | 304 741 553.37 |
 
 Vanusegruppide lõikes:
 
 | Vanusegrupp | Faktiridu | Maksuvõla summa |
 | --- | ---: | ---: |
-| `kuni 2 kuud` | 3 296 | 12 702 086.76 |
-| `2-5 kuud` | 3 194 | 27 599 495.35 |
-| `6-11 kuud` | 2 653 | 33 556 462.49 |
-| `>= 1 aasta` | 8 939 | 230 883 508.77 |
+| `kuni 2 kuud` | 39 061 | 168 789 255.07 |
+| `2-5 kuud` | 28 432 | 266 033 431.74 |
+| `6-11 kuud` | 24 140 | 308 808 691.03 |
+| `>= 1 aasta` | 80 560 | 2 082 859 634.92 |
 
 ## Kontrollid
 
@@ -99,9 +116,13 @@ Fail `quality/040_mart_star_quality_checks.sql` kontrollis:
 - kõik 4 `mart_star` objekti on olemas;
 - `dim_aeg`, `dim_ettevote` ja `fact_maksuvolg` sisaldavad ridu;
 - `dim_vanuse_grupp` sisaldab täpselt 4 rida;
+- `dim_ettevote` ridade arv võrdub valitud MTA lõigetes esinevate unikaalsete registrikoodide arvuga;
 - faktitabelis ei ole orbe `dim_ettevote`, `dim_aeg` ega `dim_vanuse_grupp` suhtes;
-- faktide maksuvõla summa võrdub viimase STAGE MTA snapshoti registrikoodi lõikes koondatud summaga;
-- faktiridade arv võrdub viimase STAGE MTA snapshoti unikaalsete registrikoodide arvuga;
+- faktis on kõik valitud MTA `data_as_of` kuupäevad;
+- faktide maksuvõla summa võrdub valitud STAGE MTA snapshotite registrikoodi lõikes koondatud summaga;
+- kuupäeva kaupa faktiridade arv ja summa klapivad STAGE valitud snapshotitega;
+- faktiridade arv võrdub valitud STAGE MTA lõigete ettevõte+kuupäev ridade arvuga;
+- faktis ei ole ettevõte+kuupäev duplikaate;
 - juhatuse muutuse arvud ei ole negatiivsed ega NULL;
 - faktis ei ole vanusegruppe, mida dimensioonis ei ole;
 - README1 vastavustabel on kooskõlas loodud füüsiliste objektidega.
@@ -110,8 +131,10 @@ Tulemus:
 
 ```text
 FK kontrollid: OK
-Faktisumma kontroll: OK, 304741553.37 = 304741553.37
-Faktiridade kontroll: OK, 18082 = 18082
+Kuupäevade kontroll: OK, 9 kuupäeva 2026-05-21 kuni 2026-05-30
+Faktisumma kontroll: OK, 2826491012.76 = 2826491012.76
+Faktiridade kontroll: OK, 172193 = 172193
+Grain duplikaatide kontroll: OK
 README1 vastavus: OK
 Superseti SELECT õigused mart_star tabelitele: OK
 ```

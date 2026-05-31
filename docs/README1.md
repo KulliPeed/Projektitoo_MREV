@@ -17,10 +17,10 @@ Olemasolev `mart` skeem sisaldab dashboard'i jaoks loodud vaateid ja Superseti c
 
 ```text
 üks rida = üks ettevõte ühe MTA andmeseisu kuupäeva kohta,
-kasutades viimast STAGE-is olemasolevat MTA snapshoti.
+kasutades iga data_as_of kuupäeva kohta hiliseimat STAGE-is olemasolevat MTA snapshoti.
 ```
 
-Kui ühel registrikoodil on viimases MTA snapshotis mitu rida, koondatakse need üheks faktireaks registrikoodi lõikes. See väldib sama `data_as_of` seisu topelt arvestamist mitmest snapshotist.
+Kui ühel registrikoodil on sama `data_as_of` kuupäeva valitud snapshotis mitu rida, koondatakse need üheks faktireaks registrikoodi lõikes. Kui sama `data_as_of` esineb mitmes snapshotis, kasutatakse ainult selle andmeseisu hiliseimat snapshotit.
 
 ## ER skeem
 

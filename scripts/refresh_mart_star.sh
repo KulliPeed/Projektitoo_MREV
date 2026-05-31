@@ -37,6 +37,9 @@ WITH summary AS (
     SELECT 'fact_maksuvolg_ridu', count(*)::text
     FROM mart_star.fact_maksuvolg
     UNION ALL
+    SELECT 'fact_kuupaevu', count(DISTINCT kuupaev)::text
+    FROM mart_star.fact_maksuvolg
+    UNION ALL
     SELECT 'fact_maksuvola_summa', COALESCE(sum(maksuvola_summa), 0)::text
     FROM mart_star.fact_maksuvolg
     UNION ALL
@@ -51,8 +54,9 @@ ORDER BY
         WHEN 'dim_aeg_ridu' THEN 2
         WHEN 'dim_vanuse_grupp_ridu' THEN 3
         WHEN 'fact_maksuvolg_ridu' THEN 4
-        WHEN 'fact_maksuvola_summa' THEN 5
-        WHEN 'juhatuse_muutusega_faktiridu' THEN 6
+        WHEN 'fact_kuupaevu' THEN 5
+        WHEN 'fact_maksuvola_summa' THEN 6
+        WHEN 'juhatuse_muutusega_faktiridu' THEN 7
         ELSE 99
     END;
 SQL

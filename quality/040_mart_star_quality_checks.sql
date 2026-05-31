@@ -38,27 +38,33 @@ END;
 $$;
 
 \echo '=== MART_STAR kvaliteedi ajutised koondid ==='
-CREATE TEMP TABLE mart_star_quality_latest_snapshot AS
-SELECT max(snapshot_date) AS latest_mta_snapshot_date
-FROM stage.mta_maksuvolglased;
+CREATE TEMP TABLE mart_star_quality_selected_snapshots AS
+SELECT
+    data_as_of,
+    max(snapshot_date) AS snapshot_date
+FROM stage.mta_maksuvolglased
+WHERE data_as_of IS NOT NULL
+GROUP BY data_as_of;
 
 CREATE TEMP TABLE mart_star_quality_stage_by_company AS
-WITH latest_rows AS (
+WITH selected_rows AS (
     SELECT
-        NULLIF(btrim(registrikood), '') AS registrikood,
-        snapshot_date,
-        data_as_of,
-        COALESCE(maksuvolg, 0) AS maksuvolg,
-        COALESCE(sh_vaidlustatud, 0) AS sh_vaidlustatud,
-        COALESCE(sh_tasumisgraafikus, 0) AS sh_tasumisgraafikus,
-        volg_vanus_paevades
-    FROM stage.mta_maksuvolglased
-    WHERE snapshot_date = (SELECT latest_mta_snapshot_date FROM mart_star_quality_latest_snapshot)
+        NULLIF(btrim(m.registrikood), '') AS registrikood,
+        m.snapshot_date,
+        m.data_as_of,
+        COALESCE(m.maksuvolg, 0) AS maksuvolg,
+        COALESCE(m.sh_vaidlustatud, 0) AS sh_vaidlustatud,
+        COALESCE(m.sh_tasumisgraafikus, 0) AS sh_tasumisgraafikus,
+        m.volg_vanus_paevades
+    FROM stage.mta_maksuvolglased m
+    JOIN mart_star_quality_selected_snapshots s
+      ON s.data_as_of = m.data_as_of
+     AND s.snapshot_date = m.snapshot_date
 )
 SELECT
     registrikood,
     max(snapshot_date) AS mta_snapshot_date,
-    max(data_as_of) AS mta_data_as_of,
+    data_as_of AS mta_data_as_of,
     COALESCE(sum(maksuvolg), 0)::numeric(18,2) AS maksuvola_summa,
     COALESCE(sum(sh_vaidlustatud), 0)::numeric(18,2) AS vaidlustatud_summa,
     COALESCE(sum(sh_tasumisgraafikus), 0)::numeric(18,2) AS tasumisgraafikus_summa,
@@ -70,9 +76,9 @@ SELECT
         WHEN max(volg_vanus_paevades) >= 365 THEN '>= 1 aasta'
         ELSE NULL
     END AS maksuvola_vanuse_grupp
-FROM latest_rows
+FROM selected_rows
 WHERE registrikood IS NOT NULL
-GROUP BY registrikood;
+GROUP BY registrikood, data_as_of;
 
 CREATE TEMP TABLE mart_star_quality_counts AS
 SELECT 'mart_star.dim_aeg' AS object_name, count(*) AS row_count FROM mart_star.dim_aeg
@@ -107,6 +113,37 @@ BEGIN
 
     IF v_bad IS NOT NULL THEN
         RAISE EXCEPTION 'MART_STAR rea-arvude kontroll ebaonnestus: %', v_bad;
+    END IF;
+END;
+$$;
+
+\echo '=== MART_STAR dim_ettevote pariteet valitud MTA kuupaeva-loigetega ==='
+WITH stage_dim AS (
+    SELECT count(DISTINCT registrikood) AS cnt
+    FROM mart_star_quality_stage_by_company
+),
+dim_cnt AS (
+    SELECT count(*) AS cnt
+    FROM mart_star.dim_ettevote
+)
+SELECT
+    stage_dim.cnt AS stage_distinct_registrikoodid,
+    dim_cnt.cnt AS dim_ettevote_rows,
+    stage_dim.cnt = dim_cnt.cnt AS ok
+FROM stage_dim, dim_cnt;
+
+DO $$
+DECLARE
+    v_stage_cnt bigint;
+    v_dim_cnt bigint;
+BEGIN
+    SELECT s.cnt, d.cnt
+    INTO v_stage_cnt, v_dim_cnt
+    FROM (SELECT count(DISTINCT registrikood) AS cnt FROM mart_star_quality_stage_by_company) s
+    CROSS JOIN (SELECT count(*) AS cnt FROM mart_star.dim_ettevote) d;
+
+    IF v_stage_cnt <> v_dim_cnt THEN
+        RAISE EXCEPTION 'MART_STAR dim_ettevote pariteet ei klapi: stage=%, dim=%', v_stage_cnt, v_dim_cnt;
     END IF;
 END;
 $$;
@@ -163,7 +200,55 @@ BEGIN
 END;
 $$;
 
-\echo '=== MART_STAR faktisumma pariteet latest STAGE snapshotiga ==='
+\echo '=== MART_STAR kuupaevade kontroll ==='
+WITH stage_dates AS (
+    SELECT count(DISTINCT mta_data_as_of) AS cnt, min(mta_data_as_of) AS min_date, max(mta_data_as_of) AS max_date
+    FROM mart_star_quality_stage_by_company
+),
+fact_dates AS (
+    SELECT count(DISTINCT kuupaev) AS cnt, min(kuupaev) AS min_date, max(kuupaev) AS max_date
+    FROM mart_star.fact_maksuvolg
+)
+SELECT
+    stage_dates.cnt AS stage_data_as_of_dates,
+    fact_dates.cnt AS fact_kuupaev_dates,
+    stage_dates.min_date AS stage_min_date,
+    stage_dates.max_date AS stage_max_date,
+    fact_dates.min_date AS fact_min_date,
+    fact_dates.max_date AS fact_max_date,
+    stage_dates.cnt = fact_dates.cnt
+        AND stage_dates.min_date = fact_dates.min_date
+        AND stage_dates.max_date = fact_dates.max_date AS ok
+FROM stage_dates, fact_dates;
+
+DO $$
+DECLARE
+    v_stage_cnt bigint;
+    v_fact_cnt bigint;
+    v_stage_min date;
+    v_stage_max date;
+    v_fact_min date;
+    v_fact_max date;
+BEGIN
+    SELECT s.cnt, f.cnt, s.min_date, s.max_date, f.min_date, f.max_date
+    INTO v_stage_cnt, v_fact_cnt, v_stage_min, v_stage_max, v_fact_min, v_fact_max
+    FROM (
+        SELECT count(DISTINCT mta_data_as_of) AS cnt, min(mta_data_as_of) AS min_date, max(mta_data_as_of) AS max_date
+        FROM mart_star_quality_stage_by_company
+    ) s
+    CROSS JOIN (
+        SELECT count(DISTINCT kuupaev) AS cnt, min(kuupaev) AS min_date, max(kuupaev) AS max_date
+        FROM mart_star.fact_maksuvolg
+    ) f;
+
+    IF v_stage_cnt <> v_fact_cnt OR v_stage_min <> v_fact_min OR v_stage_max <> v_fact_max THEN
+        RAISE EXCEPTION 'MART_STAR kuupaevade kontroll ei klapi: stage cnt/min/max=%/%/%, fact cnt/min/max=%/%/%',
+            v_stage_cnt, v_stage_min, v_stage_max, v_fact_cnt, v_fact_min, v_fact_max;
+    END IF;
+END;
+$$;
+
+\echo '=== MART_STAR faktisumma pariteet valitud STAGE snapshotitega ==='
 WITH stage_sum AS (
     SELECT COALESCE(sum(maksuvola_summa), 0) AS total_sum
     FROM mart_star_quality_stage_by_company
@@ -200,7 +285,70 @@ BEGIN
 END;
 $$;
 
-\echo '=== MART_STAR faktiridade pariteet latest STAGE unikaalsete registrikoodidega ==='
+\echo '=== MART_STAR kuupaeva kaupa summa ja ridade pariteet ==='
+WITH stage_by_date AS (
+    SELECT
+        mta_data_as_of AS kuupaev,
+        count(*) AS rows,
+        COALESCE(sum(maksuvola_summa), 0) AS summa
+    FROM mart_star_quality_stage_by_company
+    GROUP BY mta_data_as_of
+),
+fact_by_date AS (
+    SELECT
+        kuupaev,
+        count(*) AS rows,
+        COALESCE(sum(maksuvola_summa), 0) AS summa
+    FROM mart_star.fact_maksuvolg
+    GROUP BY kuupaev
+)
+SELECT
+    COALESCE(s.kuupaev, f.kuupaev) AS kuupaev,
+    s.rows AS stage_rows,
+    f.rows AS fact_rows,
+    s.summa AS stage_summa,
+    f.summa AS fact_summa,
+    s.rows = f.rows AND abs(s.summa - f.summa) < 0.01 AS ok
+FROM stage_by_date s
+FULL JOIN fact_by_date f ON f.kuupaev = s.kuupaev
+ORDER BY kuupaev;
+
+DO $$
+DECLARE
+    v_bad bigint;
+BEGIN
+    WITH stage_by_date AS (
+        SELECT
+            mta_data_as_of AS kuupaev,
+            count(*) AS rows,
+            COALESCE(sum(maksuvola_summa), 0) AS summa
+        FROM mart_star_quality_stage_by_company
+        GROUP BY mta_data_as_of
+    ),
+    fact_by_date AS (
+        SELECT
+            kuupaev,
+            count(*) AS rows,
+            COALESCE(sum(maksuvola_summa), 0) AS summa
+        FROM mart_star.fact_maksuvolg
+        GROUP BY kuupaev
+    )
+    SELECT count(*)
+    INTO v_bad
+    FROM stage_by_date s
+    FULL JOIN fact_by_date f ON f.kuupaev = s.kuupaev
+    WHERE s.kuupaev IS NULL
+       OR f.kuupaev IS NULL
+       OR s.rows <> f.rows
+       OR abs(s.summa - f.summa) >= 0.01;
+
+    IF v_bad <> 0 THEN
+        RAISE EXCEPTION 'MART_STAR kuupaeva kaupa pariteet ei klapi, vigaseid kuupaevi=%', v_bad;
+    END IF;
+END;
+$$;
+
+\echo '=== MART_STAR faktiridade pariteet valitud STAGE unikaalsete registrikoodidega ==='
 WITH stage_cnt AS (
     SELECT count(*) AS cnt
     FROM mart_star_quality_stage_by_company
@@ -210,7 +358,7 @@ fact_cnt AS (
     FROM mart_star.fact_maksuvolg
 )
 SELECT
-    stage_cnt.cnt AS stage_distinct_registrikoodid,
+    stage_cnt.cnt AS stage_company_date_rows,
     fact_cnt.cnt AS fact_rows,
     stage_cnt.cnt = fact_cnt.cnt AS ok
 FROM stage_cnt, fact_cnt;
@@ -227,6 +375,36 @@ BEGIN
 
     IF v_stage_cnt <> v_fact_cnt THEN
         RAISE EXCEPTION 'MART_STAR faktiridade arv ei klapi: stage=%, fact=%', v_stage_cnt, v_fact_cnt;
+    END IF;
+END;
+$$;
+
+\echo '=== MART_STAR grain duplikaatide kontroll ==='
+SELECT
+    count(*) AS duplicate_company_date_keys,
+    CASE WHEN count(*) = 0 THEN 'OK' ELSE 'ERROR' END AS status
+FROM (
+    SELECT dim_ettevote_id, kuupaev
+    FROM mart_star.fact_maksuvolg
+    GROUP BY dim_ettevote_id, kuupaev
+    HAVING count(*) > 1
+) d;
+
+DO $$
+DECLARE
+    v_bad bigint;
+BEGIN
+    SELECT count(*)
+    INTO v_bad
+    FROM (
+        SELECT dim_ettevote_id, kuupaev
+        FROM mart_star.fact_maksuvolg
+        GROUP BY dim_ettevote_id, kuupaev
+        HAVING count(*) > 1
+    ) d;
+
+    IF v_bad <> 0 THEN
+        RAISE EXCEPTION 'MART_STAR faktis on ettevõte+kuupäev duplikaate: %', v_bad;
     END IF;
 END;
 $$;

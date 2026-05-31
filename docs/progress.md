@@ -15,7 +15,6 @@
 - kvaliteedi testid peame ühte tabelisse kokku kirjutama- kvaliteedi testide tabelisse (hetkel kirjutame logidesse)
 - dashboardi vaated vajavad ka muutmist: 1)peale juhatuse liikme muutuse arvutuse korrigeerimist vaadete täiendamine, 2) kvaliteedi testi tulemused viia ka dashboardile
 - peame kustutama mart kihist mart. algusega vaated ja jätma alles ainult mart_star. tabelid
--
 
 ## Mis takistab
 

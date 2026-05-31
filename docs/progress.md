@@ -1,15 +1,14 @@
 # Edenemisraport
 
-> **Juhend:** See fail on projektitöö teise nädala väljund. Uuenda lühidalt iga esitamise eel. Kustuta see juhendrida.
 
 ## Mis on valmis
 
-- [ ] Docker Compose käivitab kõik teenused
-- [x] Andmeid saadakse allikast kätte
-- [x] Andmed laetakse `staging` kihti
-- [x] Vähemalt üks transformatsioon toimib
-- [ ] Vähemalt üks näidikulaud on nähtaval
-- [ ] Vähemalt üks andmekvaliteedi test läbib
+- [x] Docker Compose käivitab kõik teenused - käivitab
+- [x] Andmeid saadakse allikast kätte - andmed laaduvad igapäevaselt
+- [x] Andmed laetakse `staging` kihti - Staging kihis on mitme päeva andmestik
+- [x] Vähemalt üks transformatsioon toimib - toimivad kõik plaanitud transformatsioonid v.a juhatuse muutuse fakt, mida on vaja veel korrigeerida
+- [x] Vähemalt üks näidikulaud on nähtaval - nähtaval on dashboard koos 5 visuaaliga
+- [x] Vähemalt üks andmekvaliteedi test läbib - RAW ja STAGE andmekvaliteedi testid on loodud, nt STAGE kontrollid: RAW/STAGE rea-arvu pariteet, MTA tüübiteisendused, negatiivsed või puuduvad summad, kuupäevad, RIK registrikoodid ja duplikaadid.
 
 [Täpsusta lühidalt, mis täpselt valmis on]
 

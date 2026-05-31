@@ -26,9 +26,39 @@
 Käsk, millega saab kontrollida, et töövoog töötab:
 
 ```bash
-# [Lisa siia käsk, mis näitab, et andmed liiguvad allikast näidikulauani]
-# Näiteks:
-docker compose exec pipeline python scripts/run_pipeline.py check
-```
+cd /home/pi/kool/projekt
 
-Oodatav tulemus: [Kirjelda, mida töötav süsteem väljastab]
+# 1. RAW -> STAGE
+./scripts/refresh_stage_incremental.sh
+
+# 2. STAGE -> MART / Superset cache
+./scripts/refresh_mart.sh
+
+# 3. Kontroll: dashboardi KPI-vaade annab tulemuse
+docker exec -i andmeprojekt_postgres psql -U andrus -d andmeprojekt -c "
+SELECT
+  COUNT(DISTINCT registrikood) AS "Maksuvõlglaste arv"
+FROM (
+  SELECT
+    f.*,
+    e.nimi AS ettevote_nimi,
+    e.mta_nimi,
+    e.rik_nimi,
+    e.registrikood AS ettevote_registrikood,
+    e.oiguslik_vorm,
+    e.staatus,
+    e.leitud_rikist AS ettevote_leitud_rikist,
+    e.latest_mta_snapshot_date,
+    e.latest_mta_data_as_of,
+    e.latest_rik_snapshot_date
+  FROM mart_star.fact_maksuvolg AS f
+  LEFT JOIN mart_star.dim_ettevote AS e
+    ON f.dim_ettevote_id = e.ettevote_id
+) AS virtual_table
+WHERE
+  mta_data_as_of >= TO_DATE('2026-05-30', 'YYYY-MM-DD')
+  AND mta_data_as_of < TO_DATE('2026-05-31', 'YYYY-MM-DD')
+LIMIT 5000
+"
+
+Oodatav tulemus: Dashboard kuvab välja eelmise päeva maksuvõlglaste arvu.

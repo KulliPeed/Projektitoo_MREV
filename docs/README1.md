@@ -16,11 +16,12 @@ Olemasolev `mart` skeem sisaldab dashboard'i jaoks loodud vaateid ja Superseti c
 `mart_star.fact_maksuvolg` grain:
 
 ```text
-üks rida = üks ettevõte ühe MTA andmeseisu kuupäeva kohta,
-kasutades iga data_as_of kuupäeva kohta hiliseimat STAGE-is olemasolevat MTA snapshoti.
+üks rida = üks ettevõte + üks MTA snapshot_date.
 ```
 
-Kui ühel registrikoodil on sama `data_as_of` kuupäeva valitud snapshotis mitu rida, koondatakse need üheks faktireaks registrikoodi lõikes. Kui sama `data_as_of` esineb mitmes snapshotis, kasutatakse ainult selle andmeseisu hiliseimat snapshotit.
+`FACT_MAKSUVOLG.kuupaev` vastab MTA `snapshot_date` väärtusele. `mta_data_as_of` on faktitabelis lisainfo veerg, kuid graini ei määra. Kui ühel registrikoodil on samas MTA snapshotis mitu rida, koondatakse need üheks faktireaks registrikoodi ja snapshot-kuupäeva lõikes.
+
+`FACT_MAKSUVOLG.juhatuse_muutuse_fakt` arvutatakse `stage.rik_kaardile_kantud_isikud` põhjal. Iga MTA snapshoti kuupäeva D kohta võrreldakse RIK juhatuse liikmete seisu kuupäeval D ja kuupäeval D-1. Kui ettevõttel lisandus juhatuse liige või varasem juhatuse liige puudub D päeval, siis `juhatuse_muutuse_fakt = true`. Kui RIK D/D-1 võrdlust ei saa teha, jääb faktirida alles ja väärtus on `false`.
 
 ## ER skeem
 

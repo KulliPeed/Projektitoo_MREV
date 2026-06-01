@@ -7,6 +7,8 @@ WITH expected(object_name) AS (
         ('mart_star.dim_aeg'),
         ('mart_star.dim_ettevote'),
         ('mart_star.dim_vanuse_grupp'),
+        ('mart_star.juhatuse_muutus_paeviti'),
+        ('mart_star.v_juhatuse_muutus_paeviti'),
         ('mart_star.fact_maksuvolg')
 )
 SELECT
@@ -24,6 +26,8 @@ BEGIN
             ('mart_star.dim_aeg'),
             ('mart_star.dim_ettevote'),
             ('mart_star.dim_vanuse_grupp'),
+            ('mart_star.juhatuse_muutus_paeviti'),
+            ('mart_star.v_juhatuse_muutus_paeviti'),
             ('mart_star.fact_maksuvolg')
     )
     SELECT string_agg(object_name, ', ' ORDER BY object_name)
@@ -38,47 +42,28 @@ END;
 $$;
 
 \echo '=== MART_STAR kvaliteedi ajutised koondid ==='
-CREATE TEMP TABLE mart_star_quality_selected_snapshots AS
-SELECT
-    data_as_of,
-    max(snapshot_date) AS snapshot_date
-FROM stage.mta_maksuvolglased
-WHERE data_as_of IS NOT NULL
-GROUP BY data_as_of;
-
 CREATE TEMP TABLE mart_star_quality_stage_by_company AS
-WITH selected_rows AS (
-    SELECT
-        NULLIF(btrim(m.registrikood), '') AS registrikood,
-        m.snapshot_date,
-        m.data_as_of,
-        COALESCE(m.maksuvolg, 0) AS maksuvolg,
-        COALESCE(m.sh_vaidlustatud, 0) AS sh_vaidlustatud,
-        COALESCE(m.sh_tasumisgraafikus, 0) AS sh_tasumisgraafikus,
-        m.volg_vanus_paevades
-    FROM stage.mta_maksuvolglased m
-    JOIN mart_star_quality_selected_snapshots s
-      ON s.data_as_of = m.data_as_of
-     AND s.snapshot_date = m.snapshot_date
-)
 SELECT
-    registrikood,
-    max(snapshot_date) AS mta_snapshot_date,
-    data_as_of AS mta_data_as_of,
-    COALESCE(sum(maksuvolg), 0)::numeric(18,2) AS maksuvola_summa,
-    COALESCE(sum(sh_vaidlustatud), 0)::numeric(18,2) AS vaidlustatud_summa,
-    COALESCE(sum(sh_tasumisgraafikus), 0)::numeric(18,2) AS tasumisgraafikus_summa,
-    max(volg_vanus_paevades) AS volg_vanus_paevades,
+    NULLIF(btrim(m.registrikood), '') AS registrikood,
+    m.snapshot_date AS mta_snapshot_date,
+    m.data_as_of AS mta_data_as_of,
+    COALESCE(sum(COALESCE(m.maksuvolg, 0)), 0)::numeric(18,2) AS maksuvola_summa,
+    COALESCE(sum(COALESCE(m.sh_vaidlustatud, 0)), 0)::numeric(18,2) AS vaidlustatud_summa,
+    COALESCE(sum(COALESCE(m.sh_tasumisgraafikus, 0)), 0)::numeric(18,2) AS tasumisgraafikus_summa,
+    max(m.volg_vanus_paevades) AS volg_vanus_paevades,
     CASE
-        WHEN max(volg_vanus_paevades) BETWEEN 1 AND 59 THEN 'kuni 2 kuud'
-        WHEN max(volg_vanus_paevades) BETWEEN 60 AND 179 THEN '2-5 kuud'
-        WHEN max(volg_vanus_paevades) BETWEEN 180 AND 364 THEN '6-11 kuud'
-        WHEN max(volg_vanus_paevades) >= 365 THEN '>= 1 aasta'
+        WHEN max(m.volg_vanus_paevades) BETWEEN 1 AND 59 THEN 'kuni 2 kuud'
+        WHEN max(m.volg_vanus_paevades) BETWEEN 60 AND 179 THEN '2-5 kuud'
+        WHEN max(m.volg_vanus_paevades) BETWEEN 180 AND 364 THEN '6-11 kuud'
+        WHEN max(m.volg_vanus_paevades) >= 365 THEN '>= 1 aasta'
         ELSE NULL
     END AS maksuvola_vanuse_grupp
-FROM selected_rows
-WHERE registrikood IS NOT NULL
-GROUP BY registrikood, data_as_of;
+FROM stage.mta_maksuvolglased m
+WHERE NULLIF(btrim(m.registrikood), '') IS NOT NULL
+GROUP BY
+    NULLIF(btrim(m.registrikood), ''),
+    m.snapshot_date,
+    m.data_as_of;
 
 CREATE TEMP TABLE mart_star_quality_counts AS
 SELECT 'mart_star.dim_aeg' AS object_name, count(*) AS row_count FROM mart_star.dim_aeg
@@ -86,6 +71,10 @@ UNION ALL
 SELECT 'mart_star.dim_ettevote', count(*) FROM mart_star.dim_ettevote
 UNION ALL
 SELECT 'mart_star.dim_vanuse_grupp', count(*) FROM mart_star.dim_vanuse_grupp
+UNION ALL
+SELECT 'mart_star.juhatuse_muutus_paeviti', count(*) FROM mart_star.juhatuse_muutus_paeviti
+UNION ALL
+SELECT 'mart_star.v_juhatuse_muutus_paeviti', count(*) FROM mart_star.v_juhatuse_muutus_paeviti
 UNION ALL
 SELECT 'mart_star.fact_maksuvolg', count(*) FROM mart_star.fact_maksuvolg;
 
@@ -117,7 +106,7 @@ BEGIN
 END;
 $$;
 
-\echo '=== MART_STAR dim_ettevote pariteet valitud MTA kuupaeva-loigetega ==='
+\echo '=== MART_STAR dim_ettevote pariteet MTA snapshotitega ==='
 WITH stage_dim AS (
     SELECT count(DISTINCT registrikood) AS cnt
     FROM mart_star_quality_stage_by_company
@@ -200,18 +189,18 @@ BEGIN
 END;
 $$;
 
-\echo '=== MART_STAR kuupaevade kontroll ==='
+\echo '=== MART_STAR MTA snapshot kuupaevade kontroll ==='
 WITH stage_dates AS (
-    SELECT count(DISTINCT mta_data_as_of) AS cnt, min(mta_data_as_of) AS min_date, max(mta_data_as_of) AS max_date
-    FROM mart_star_quality_stage_by_company
+    SELECT count(DISTINCT snapshot_date) AS cnt, min(snapshot_date) AS min_date, max(snapshot_date) AS max_date
+    FROM stage.mta_maksuvolglased
 ),
 fact_dates AS (
     SELECT count(DISTINCT kuupaev) AS cnt, min(kuupaev) AS min_date, max(kuupaev) AS max_date
     FROM mart_star.fact_maksuvolg
 )
 SELECT
-    stage_dates.cnt AS stage_data_as_of_dates,
-    fact_dates.cnt AS fact_kuupaev_dates,
+    stage_dates.cnt AS stage_mta_dates,
+    fact_dates.cnt AS fact_dates,
     stage_dates.min_date AS stage_min_date,
     stage_dates.max_date AS stage_max_date,
     fact_dates.min_date AS fact_min_date,
@@ -233,8 +222,8 @@ BEGIN
     SELECT s.cnt, f.cnt, s.min_date, s.max_date, f.min_date, f.max_date
     INTO v_stage_cnt, v_fact_cnt, v_stage_min, v_stage_max, v_fact_min, v_fact_max
     FROM (
-        SELECT count(DISTINCT mta_data_as_of) AS cnt, min(mta_data_as_of) AS min_date, max(mta_data_as_of) AS max_date
-        FROM mart_star_quality_stage_by_company
+        SELECT count(DISTINCT snapshot_date) AS cnt, min(snapshot_date) AS min_date, max(snapshot_date) AS max_date
+        FROM stage.mta_maksuvolglased
     ) s
     CROSS JOIN (
         SELECT count(DISTINCT kuupaev) AS cnt, min(kuupaev) AS min_date, max(kuupaev) AS max_date
@@ -242,13 +231,34 @@ BEGIN
     ) f;
 
     IF v_stage_cnt <> v_fact_cnt OR v_stage_min <> v_fact_min OR v_stage_max <> v_fact_max THEN
-        RAISE EXCEPTION 'MART_STAR kuupaevade kontroll ei klapi: stage cnt/min/max=%/%/%, fact cnt/min/max=%/%/%',
+        RAISE EXCEPTION 'MART_STAR MTA kuupaevade kontroll ei klapi: stage cnt/min/max=%/%/%, fact cnt/min/max=%/%/%',
             v_stage_cnt, v_stage_min, v_stage_max, v_fact_cnt, v_fact_min, v_fact_max;
     END IF;
 END;
 $$;
 
-\echo '=== MART_STAR faktisumma pariteet valitud STAGE snapshotitega ==='
+\echo '=== MART_STAR fact kuupaev = MTA snapshot_date kontroll ==='
+SELECT
+    count(*) AS bad_rows,
+    CASE WHEN count(*) = 0 THEN 'OK' ELSE 'ERROR' END AS status
+FROM mart_star.fact_maksuvolg
+WHERE kuupaev <> mta_snapshot_date;
+
+DO $$
+DECLARE
+    v_bad bigint;
+BEGIN
+    SELECT count(*) INTO v_bad
+    FROM mart_star.fact_maksuvolg
+    WHERE kuupaev <> mta_snapshot_date;
+
+    IF v_bad <> 0 THEN
+        RAISE EXCEPTION 'MART_STAR fact.kuupaev ei vordu mta_snapshot_date vaartusega, vigaseid ridu=%', v_bad;
+    END IF;
+END;
+$$;
+
+\echo '=== MART_STAR faktisumma pariteet STAGE snapshotitega ==='
 WITH stage_sum AS (
     SELECT COALESCE(sum(maksuvola_summa), 0) AS total_sum
     FROM mart_star_quality_stage_by_company
@@ -288,11 +298,11 @@ $$;
 \echo '=== MART_STAR kuupaeva kaupa summa ja ridade pariteet ==='
 WITH stage_by_date AS (
     SELECT
-        mta_data_as_of AS kuupaev,
+        mta_snapshot_date AS kuupaev,
         count(*) AS rows,
         COALESCE(sum(maksuvola_summa), 0) AS summa
     FROM mart_star_quality_stage_by_company
-    GROUP BY mta_data_as_of
+    GROUP BY mta_snapshot_date
 ),
 fact_by_date AS (
     SELECT
@@ -319,11 +329,11 @@ DECLARE
 BEGIN
     WITH stage_by_date AS (
         SELECT
-            mta_data_as_of AS kuupaev,
+            mta_snapshot_date AS kuupaev,
             count(*) AS rows,
             COALESCE(sum(maksuvola_summa), 0) AS summa
         FROM mart_star_quality_stage_by_company
-        GROUP BY mta_data_as_of
+        GROUP BY mta_snapshot_date
     ),
     fact_by_date AS (
         SELECT
@@ -348,7 +358,7 @@ BEGIN
 END;
 $$;
 
-\echo '=== MART_STAR faktiridade pariteet valitud STAGE unikaalsete registrikoodidega ==='
+\echo '=== MART_STAR faktiridade pariteet STAGE ettevõte+snapshot grainiga ==='
 WITH stage_cnt AS (
     SELECT count(*) AS cnt
     FROM mart_star_quality_stage_by_company
@@ -358,7 +368,7 @@ fact_cnt AS (
     FROM mart_star.fact_maksuvolg
 )
 SELECT
-    stage_cnt.cnt AS stage_company_date_rows,
+    stage_cnt.cnt AS stage_company_snapshot_rows,
     fact_cnt.cnt AS fact_rows,
     stage_cnt.cnt = fact_cnt.cnt AS ok
 FROM stage_cnt, fact_cnt;
@@ -381,7 +391,7 @@ $$;
 
 \echo '=== MART_STAR grain duplikaatide kontroll ==='
 SELECT
-    count(*) AS duplicate_company_date_keys,
+    count(*) AS duplicate_company_snapshot_keys,
     CASE WHEN count(*) = 0 THEN 'OK' ELSE 'ERROR' END AS status
 FROM (
     SELECT dim_ettevote_id, kuupaev
@@ -404,12 +414,116 @@ BEGIN
     ) d;
 
     IF v_bad <> 0 THEN
-        RAISE EXCEPTION 'MART_STAR faktis on ettevõte+kuupäev duplikaate: %', v_bad;
+        RAISE EXCEPTION 'MART_STAR faktis on ettevõte+snapshot kuupäev duplikaate: %', v_bad;
     END IF;
 END;
 $$;
 
-\echo '=== MART_STAR juhatuse muutuse kontroll ==='
+\echo '=== MART_STAR juhatuse muutuse abivaate kokkuvote ==='
+SELECT
+    count(*) AS ridu,
+    count(DISTINCT mta_kuupaev) AS mta_kuupaevi,
+    count(*) FILTER (WHERE juhatuse_muutuse_fakt = true) AS muutusega_ridu,
+    count(*) FILTER (WHERE rik_vordlus_olemas = false) AS puuduliku_vordlusega_ridu,
+    count(DISTINCT mta_kuupaev) FILTER (WHERE rik_vordlus_olemas = false) AS puuduliku_vordlusega_mta_kuupaevi
+FROM mart_star.v_juhatuse_muutus_paeviti;
+
+DO $$
+DECLARE
+    v_rows bigint;
+BEGIN
+    SELECT count(*) INTO v_rows
+    FROM mart_star.v_juhatuse_muutus_paeviti;
+
+    IF v_rows = 0 THEN
+        RAISE EXCEPTION 'mart_star.v_juhatuse_muutus_paeviti ei tagastanud ridu';
+    END IF;
+END;
+$$;
+
+\echo '=== MART_STAR juhatuse abivaade vs fakt grain ==='
+WITH helper_cnt AS (
+    SELECT count(*) AS cnt
+    FROM mart_star.v_juhatuse_muutus_paeviti
+),
+fact_cnt AS (
+    SELECT count(*) AS cnt
+    FROM mart_star.fact_maksuvolg
+),
+missing_helper AS (
+    SELECT count(*) AS cnt
+    FROM mart_star.fact_maksuvolg f
+    LEFT JOIN mart_star.v_juhatuse_muutus_paeviti jm
+           ON jm.mta_kuupaev = f.kuupaev
+          AND jm.registrikood = f.registrikood
+    WHERE jm.registrikood IS NULL
+)
+SELECT
+    helper_cnt.cnt AS helper_rows,
+    fact_cnt.cnt AS fact_rows,
+    missing_helper.cnt AS fact_rows_without_helper,
+    helper_cnt.cnt = fact_cnt.cnt AND missing_helper.cnt = 0 AS ok
+FROM helper_cnt, fact_cnt, missing_helper;
+
+DO $$
+DECLARE
+    v_helper_rows bigint;
+    v_fact_rows bigint;
+    v_missing bigint;
+BEGIN
+    SELECT h.cnt, f.cnt, m.cnt
+    INTO v_helper_rows, v_fact_rows, v_missing
+    FROM (SELECT count(*) AS cnt FROM mart_star.v_juhatuse_muutus_paeviti) h
+    CROSS JOIN (SELECT count(*) AS cnt FROM mart_star.fact_maksuvolg) f
+    CROSS JOIN (
+        SELECT count(*) AS cnt
+        FROM mart_star.fact_maksuvolg f
+        LEFT JOIN mart_star.v_juhatuse_muutus_paeviti jm
+               ON jm.mta_kuupaev = f.kuupaev
+              AND jm.registrikood = f.registrikood
+        WHERE jm.registrikood IS NULL
+    ) m;
+
+    IF v_helper_rows <> v_fact_rows OR v_missing <> 0 THEN
+        RAISE EXCEPTION 'MART_STAR juhatuse abivaate grain ei klapi faktiga: helper=%, fact=%, missing=%',
+            v_helper_rows, v_fact_rows, v_missing;
+    END IF;
+END;
+$$;
+
+\echo '=== MART_STAR juhatuse muutus faktis klapib abivaatega ==='
+SELECT
+    count(*) AS mismatched_rows,
+    CASE WHEN count(*) = 0 THEN 'OK' ELSE 'ERROR' END AS status
+FROM mart_star.fact_maksuvolg f
+JOIN mart_star.v_juhatuse_muutus_paeviti jm
+  ON jm.mta_kuupaev = f.kuupaev
+ AND jm.registrikood = f.registrikood
+WHERE f.juhatuse_muutuse_fakt IS DISTINCT FROM jm.juhatuse_muutuse_fakt
+   OR f.lisatud_juhatuse_liikmeid <> jm.lisatud_juhatuse_liikmeid
+   OR f.eemaldatud_juhatuse_liikmeid <> jm.eemaldatud_juhatuse_liikmeid;
+
+DO $$
+DECLARE
+    v_bad bigint;
+BEGIN
+    SELECT count(*)
+    INTO v_bad
+    FROM mart_star.fact_maksuvolg f
+    JOIN mart_star.v_juhatuse_muutus_paeviti jm
+      ON jm.mta_kuupaev = f.kuupaev
+     AND jm.registrikood = f.registrikood
+    WHERE f.juhatuse_muutuse_fakt IS DISTINCT FROM jm.juhatuse_muutuse_fakt
+       OR f.lisatud_juhatuse_liikmeid <> jm.lisatud_juhatuse_liikmeid
+       OR f.eemaldatud_juhatuse_liikmeid <> jm.eemaldatud_juhatuse_liikmeid;
+
+    IF v_bad <> 0 THEN
+        RAISE EXCEPTION 'MART_STAR faktis olev juhatuse muutus ei klapi abivaatega: % rida', v_bad;
+    END IF;
+END;
+$$;
+
+\echo '=== MART_STAR juhatuse muutuse boolean ja arvud ==='
 SELECT
     count(*) AS rows_checked,
     count(*) FILTER (WHERE juhatuse_muutuse_fakt IS NULL) AS null_flag_rows,
@@ -449,6 +563,15 @@ BEGIN
     END IF;
 END;
 $$;
+
+\echo '=== MART_STAR juhatuse muutus kuupaevade kaupa ==='
+SELECT
+    kuupaev,
+    count(*) AS fact_rows,
+    count(*) FILTER (WHERE juhatuse_muutuse_fakt = true) AS juhatuse_muutusega_fact_rows
+FROM mart_star.fact_maksuvolg
+GROUP BY kuupaev
+ORDER BY kuupaev;
 
 \echo '=== MART_STAR vanusegrupi kontroll ==='
 SELECT

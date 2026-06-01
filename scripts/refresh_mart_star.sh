@@ -34,10 +34,10 @@ WITH summary AS (
     SELECT 'dim_vanuse_grupp_ridu', count(*)::text
     FROM mart_star.dim_vanuse_grupp
     UNION ALL
-    SELECT 'fact_maksuvolg_ridu', count(*)::text
+    SELECT 'mta_kuupaevi_faktis', count(DISTINCT kuupaev)::text
     FROM mart_star.fact_maksuvolg
     UNION ALL
-    SELECT 'fact_kuupaevu', count(DISTINCT kuupaev)::text
+    SELECT 'fact_maksuvolg_ridu', count(*)::text
     FROM mart_star.fact_maksuvolg
     UNION ALL
     SELECT 'fact_maksuvola_summa', COALESCE(sum(maksuvola_summa), 0)::text
@@ -45,6 +45,9 @@ WITH summary AS (
     UNION ALL
     SELECT 'juhatuse_muutusega_faktiridu', count(*) FILTER (WHERE juhatuse_muutuse_fakt)::text
     FROM mart_star.fact_maksuvolg
+    UNION ALL
+    SELECT 'rik_vordluseta_mta_kuupaevi', count(DISTINCT mta_kuupaev) FILTER (WHERE rik_vordlus_olemas = false)::text
+    FROM mart_star.v_juhatuse_muutus_paeviti
 )
 SELECT naitaja, vaartus
 FROM summary
@@ -53,10 +56,11 @@ ORDER BY
         WHEN 'dim_ettevote_ridu' THEN 1
         WHEN 'dim_aeg_ridu' THEN 2
         WHEN 'dim_vanuse_grupp_ridu' THEN 3
-        WHEN 'fact_maksuvolg_ridu' THEN 4
-        WHEN 'fact_kuupaevu' THEN 5
+        WHEN 'mta_kuupaevi_faktis' THEN 4
+        WHEN 'fact_maksuvolg_ridu' THEN 5
         WHEN 'fact_maksuvola_summa' THEN 6
         WHEN 'juhatuse_muutusega_faktiridu' THEN 7
+        WHEN 'rik_vordluseta_mta_kuupaevi' THEN 8
         ELSE 99
     END;
 SQL

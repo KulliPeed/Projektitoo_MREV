@@ -1,5 +1,7 @@
 # MART_STAR kihi raport 2026-05-31
 
+> Uuendus 2026-06-01: juhatuse muutuse arvutus viidi vana `mart` vaate pealt STAGE-põhiseks. Täpne kirjeldus on failis `docs/mart_star_juhatuse_muutus_stage_pohine_2026-06-01.md`.
+
 ## Eesmärk
 
 `mart_star` loodi selleks, et `docs/README1.md` kirjeldatud klassikaline tähtmudel oleks andmebaasis füüsiliselt olemas. Senine `mart` skeem jääb alles, sest see on töötav Superseti/dashboard'i kiht vaadete ja cache tabelitega.
@@ -43,10 +45,9 @@ Kasutatud allikad:
 - `stage.mta_maksuvolglased`
 - `stage.rik_ettevotted`
 - `stage.rik_kaardile_kantud_isikud`
-- `mart.v_latest_dates`
-- `mart.v_juhatuse_muutused_viimane_paev`
+- `mart_star.v_juhatuse_muutus_paeviti`
 
-RAW tabeleid tähtmudeli koostamisel ei kasutatud. Juhatuse muutuse lipp kasutab olemasolevat `mart.v_juhatuse_muutused_viimane_paev` vaadet, et `mart_star` refresh püsiks sama töökindel kui senine Superseti MART kiht.
+RAW tabeleid tähtmudeli koostamisel ei kasutatud. Seisuga 2026-06-01 arvutatakse juhatuse muutuse lipp STAGE RIK juhatuse liikmete snapshotite põhjal abivaates `mart_star.v_juhatuse_muutus_paeviti`.
 
 ## Vanusegrupid
 

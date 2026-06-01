@@ -11,8 +11,8 @@ erDiagram
         int aasta
     }
     DIM_ETTEVOTE {
-        int id PK
-        string registrikood
+        int ettevote_id PK
+        string registrikood UK
         string nimi
     }
     FACT_MAKSUVOLG {

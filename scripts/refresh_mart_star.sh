@@ -25,42 +25,44 @@ print_summary() {
 \pset pager off
 \echo '=== MART_STAR refresh kokkuvote ==='
 WITH summary AS (
-    SELECT 'dim_ettevote_ridu' AS naitaja, count(*)::text AS vaartus
+    SELECT 'mart schema removed' AS naitaja,
+           CASE WHEN EXISTS (
+               SELECT 1 FROM information_schema.schemata WHERE schema_name = 'mart'
+           ) THEN 'no' ELSE 'yes' END AS vaartus
+    UNION ALL
+    SELECT 'mart_star.dim_ettevote rows', count(*)::text
     FROM mart_star.dim_ettevote
     UNION ALL
-    SELECT 'dim_aeg_ridu', count(*)::text
+    SELECT 'mart_star.dim_aeg rows', count(*)::text
     FROM mart_star.dim_aeg
     UNION ALL
-    SELECT 'dim_vanuse_grupp_ridu', count(*)::text
+    SELECT 'mart_star.dim_vanuse_grupp rows', count(*)::text
     FROM mart_star.dim_vanuse_grupp
     UNION ALL
-    SELECT 'mta_kuupaevi_faktis', count(DISTINCT kuupaev)::text
+    SELECT 'mart_star.fact_maksuvolg rows', count(*)::text
     FROM mart_star.fact_maksuvolg
     UNION ALL
-    SELECT 'fact_maksuvolg_ridu', count(*)::text
+    SELECT 'fact kuupäevi', count(DISTINCT kuupaev)::text
     FROM mart_star.fact_maksuvolg
     UNION ALL
-    SELECT 'fact_maksuvola_summa', COALESCE(sum(maksuvola_summa), 0)::text
+    SELECT 'fact summa', COALESCE(sum(maksuvola_summa), 0)::text
     FROM mart_star.fact_maksuvolg
     UNION ALL
-    SELECT 'juhatuse_muutusega_faktiridu', count(*) FILTER (WHERE juhatuse_muutuse_fakt)::text
+    SELECT 'juhatuse_muutuse_fakt true rows', count(*) FILTER (WHERE juhatuse_muutuse_fakt)::text
     FROM mart_star.fact_maksuvolg
-    UNION ALL
-    SELECT 'rik_vordluseta_mta_kuupaevi', count(DISTINCT mta_kuupaev) FILTER (WHERE rik_vordlus_olemas = false)::text
-    FROM mart_star.v_juhatuse_muutus_paeviti
 )
 SELECT naitaja, vaartus
 FROM summary
 ORDER BY
     CASE naitaja
-        WHEN 'dim_ettevote_ridu' THEN 1
-        WHEN 'dim_aeg_ridu' THEN 2
-        WHEN 'dim_vanuse_grupp_ridu' THEN 3
-        WHEN 'mta_kuupaevi_faktis' THEN 4
-        WHEN 'fact_maksuvolg_ridu' THEN 5
-        WHEN 'fact_maksuvola_summa' THEN 6
-        WHEN 'juhatuse_muutusega_faktiridu' THEN 7
-        WHEN 'rik_vordluseta_mta_kuupaevi' THEN 8
+        WHEN 'mart schema removed' THEN 1
+        WHEN 'mart_star.dim_ettevote rows' THEN 2
+        WHEN 'mart_star.dim_aeg rows' THEN 3
+        WHEN 'mart_star.dim_vanuse_grupp rows' THEN 4
+        WHEN 'mart_star.fact_maksuvolg rows' THEN 5
+        WHEN 'fact kuupäevi' THEN 6
+        WHEN 'fact summa' THEN 7
+        WHEN 'juhatuse_muutuse_fakt true rows' THEN 8
         ELSE 99
     END;
 SQL
@@ -69,7 +71,7 @@ SQL
 perform_refresh() {
   set -e
   echo "[$(date --iso-8601=seconds)] MART_STAR refresh algas"
-  run_sql "Loon ja varskendan MART_STAR tahtmudeli" "db/migrations/130_create_mart_star_schema.sql"
+  run_sql "Eemaldan vana MART skeemi ja loon lihtsustatud MART_STAR tähtmudeli" "db/migrations/130_create_mart_star_schema.sql"
   run_sql "Kaivitan MART_STAR kvaliteedikontrollid" "quality/040_mart_star_quality_checks.sql"
   print_summary
 }

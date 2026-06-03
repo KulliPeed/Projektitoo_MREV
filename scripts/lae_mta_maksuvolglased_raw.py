@@ -134,6 +134,17 @@ def read_latest_target(latest_file: Path) -> Path | None:
     return Path(value)
 
 
+def resolve_import_file(csv_file: Path, latest_file: Path) -> Path:
+    latest_target = read_latest_target(latest_file)
+    if (
+        latest_target is not None
+        and latest_target.exists()
+        and csv_file.name == DEFAULT_CSV_FILE.name
+    ):
+        return latest_target
+    return csv_file
+
+
 def infer_snapshot_date(csv_file: Path, latest_file: Path) -> date:
     from_csv_name = date_from_maksuvolglased_filename(csv_file)
     if from_csv_name is not None:
@@ -292,8 +303,8 @@ def parse_args(argv):
 
 def main(argv) -> int:
     args = parse_args(argv)
-    csv_file = Path(args.csv_file)
     latest_file = Path(args.latest_file)
+    csv_file = resolve_import_file(Path(args.csv_file), latest_file)
 
     if not csv_file.exists():
         raise FileNotFoundError(csv_file)

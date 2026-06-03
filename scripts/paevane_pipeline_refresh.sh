@@ -5,7 +5,7 @@ PROJECT_DIR="/home/pi/kool/projekt"
 CONTAINER="andmeprojekt_postgres"
 DB_NAME="andmeprojekt"
 DB_USER="andrus"
-LOCK_FILE="/tmp/mrev_pipeline_refresh.lock"
+LOCK_NAME="paevane_pipeline_refresh.sh"
 
 cd "$PROJECT_DIR"
 mkdir -p logs
@@ -14,9 +14,9 @@ TS="$(date +"%Y-%m-%d_%H%M%S")"
 LOG="logs/paevane_pipeline_refresh_${TS}.log"
 START_EPOCH="$(date +%s)"
 
-exec 9>"$LOCK_FILE"
+exec 9<"$PROJECT_DIR/scripts/$LOCK_NAME"
 if ! flock -n 9; then
-  echo "[$(date --iso-8601=seconds)] Teine pipeline refresh juba kaib: $LOCK_FILE" | tee "$LOG"
+  echo "[$(date --iso-8601=seconds)] Teine pipeline refresh juba kaib: $LOCK_NAME" | tee "$LOG"
   exit 1
 fi
 

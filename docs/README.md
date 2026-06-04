@@ -115,11 +115,6 @@ Vajalikud muutujad:
 
 Projekt kontrollib järgmist:
 
-1. [Test 1 - nt: kasutajate ID on unikaalne]
-2. [Test 2 - nt: tellimuse summa pole null]
-3. [Test 3 - nt: kuupäev jääb vahemikku 2020-2026]
-[Lisa rohkem, kui sul on]
-
 | Testi number | Testi nimi                       | Testi sõnum                                                                 | DB kiht    | Allikas    |
 |--------------|----------------------------------|-------------------------------------------------------------------------------|------------|------------|
 | TEST 1       | fact_foreign_key_integrity       | FACT tabelis leidub võõrvõtmeid, millel puudub vaste dimensioonides.         | FACT       | MART_STAR  |
@@ -141,7 +136,7 @@ Projekt kontrollib järgmist:
 | TEST 17      | mart_star_required_columns       | MART_STAR veerud puuduvad.                                                    | MART_STAR  | MART_STAR  |
 | TEST 18      | fact_juhatuse_muutuse_not_null   | FACT tabelis juhatuse_muutuse_fakt sisaldab NULL väärtusi.                   | FACT       | MART_STAR  |
 
-Testide tulemused: [kuhu salvestatakse / kuidas vaadata]
+Testide tulemused: salvestatakse quality.data_quality_results tabelisse ja on nähtavad dashboardil.
 
 ## Projekti struktuur
 
@@ -161,12 +156,19 @@ Testide tulemused: [kuhu salvestatakse / kuidas vaadata]
 
 **Kokkuvõte:**
 - [Loetle, mis on lõpule viidud, mis töötab hästi]
+- Soovitud andmevoog toimib otsast lõpuni ja on terviklik (andmed laetakse automaatselt andmebaasi ja tulemid kajastuvad juhtimislaual).
+- Juhtimislaud kajastab õiget tulemit, vastab äriküsimusele ja kuvab ajas muutuvust.
+- Piisaval hulgal andmekvaliteedi kontrolle on loodud ja toovad välja olulisemad esineda võivad andmekvaliteedi probleemid juhtimislaual.
+- Töövoog on idempotentne ja korratav.
 
 **Puudused:**
 - [Loetle ausalt, mis jäi tegemata - see ei mõjuta hinnet negatiivselt, vaid aitab hinnata]
+- Kvaliteedi testid toovad välja mõningad probleemid mida ei peaks lugema veaks (nendega ei jõudnud tegeleda): nt. MTA andmed ei vasta formaadile aga MTA andmetes registrikood ei pea olema numbri formaadis, kuna nende hulgas esineb ka mitteresidente, kelle registrikood algab tähekombinatsiooniga. Andmekvaliteedi test "stage_mta_bad_registrikood" loeb sellised hetkel veaks.
+- Skriptide puhastamisega ei jõudnud tegeleda
 
 **Mis edasi:**
 - [Mida tahaksid edasi teha, kui aega oleks rohkem]
+- kõrvaldaks eelpool nimetatud puudused
 
 ## Meeskond
 

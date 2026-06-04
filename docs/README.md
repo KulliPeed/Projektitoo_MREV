@@ -4,31 +4,52 @@
 
 ## Äriküsimus
 
-[Kirjelda ühe-kahe lausega, millise andmetega seotud probleemi te lahendate ja kes sellest kasu saab.]
 Eesmärgiks on välja selgitada, kui palju on maksuvõlas ettevõtteid, mille juhatus on muutunud viimase päeva jooksul ning milline on nende ettevõtete maksuvõla kogusumma päevase seisuga, jaotatuna võla vanuse gruppidesse (kuni 2 kuud, 2-5 kuud, 6-11 kuud, ≥ 1 aasta).
-Selleks loodud juhtimislaud võimaldab saada varajase ja ajakohase ülevaate ettevõtetest, millel esinevad makseraskused koos juhatuse muutustega. Kasu saajateks on Maksu- ja Tolliamet, krdiidihalduse ettevõtted ja pankrotihaldurid, kuna juhatuse vahetus võib viidata probleemsete võlgadega ettevõtetele.
+Selleks loodud juhtimislaud võimaldab saada varajase ja ajakohase ülevaate ettevõtetest, millel esinevad makseraskused koos juhatuse muutustega ning jälgida selliste ettevõtete arvu ja jaotust ajas. Püstitus on maksuhalduri vajadusest lähtuvalt ent võimalik on võtta kasutusele ka ettevõtetes sidudes kliendibaasiga ja hinnata seeläbi varakult riske kliendi käitumises. Kasu saajateks on Maksu- ja Tolliamet, ettevõtted, krediidihalduse ettevõtted ja pankrotihaldurid, kuna juhatuse vahetus võib viidata probleemsete võlgadega ettevõtetele. 
 
 **Mõõdikud:**
 
-1. Juhatuse muutusega maksuvõlglaste arv viimasel päeval
-2. Juhatuse muutusega maksuvõlglaste maksuvõlg viimasel päeval
-3. Maksuvõlglaste arv kokku viimasel päeval ?? (Kas paneme?)
-4. Päevade lõikes juhatuse muutusega ettevõtete maksuvõla kogusumma võla vanuse gruppides
-5. Juhatuse liikme vahetusega maksuvõlglaste nimekiri
-6. Päevade lõikes juhatuse muutuse faktiga ettevõtete arv ja ettevõtete arv, kus juhatus ei muutunud (Kas paneme??)
+1. Juhatuse muutusega maksuvõlglaste arv viimase päeva seisuga.
+2. Juhatuse muutusega maksuvõlglaste maksuvõlg viimase päeva seisuga.
+3. Maksuvõlglaste arv kokku viimase päeva seisuga.
+4. Viimase 7 päeva lõikes juhatuse muutusega ettevõtete maksuvõla kogusumma võla vanuse gruppides.
+5. Viimase päeva seisuga juhatuse liikme vahetusega maksuvõlglaste nimekiri.
+6. Viimase 7 päeva kohta juhatuse muutusega ja muutusteta maksuvõlglaste arv.
 
 
 ## Arhitektuur
 
 ```mermaid
 flowchart LR
-    source[Andmeallikad] --> ingest[Sissevõtt]
-    ingest --> raw[(raw)]
-    raw --> transform1[puhastamine ja ühtlustamine]
-    transform1[puhastamine ja ühtlustamine] --> staging[(staging)]
-    staging --> transform[Ühendamine ja rikastamine]
-    transform --> mart[(mart)]
-    mart --> dashboard[Näidikulaud]
+    %% Andmeallikad
+    source1[EMTA maksuvõla andmed] --> ingest["Sissevõtt<br/>bash wrapper/Python/SQL"]
+    source2[RIK äriregistri andmed] --> ingest
+
+    %% Scheduler / orkestreerimine
+    cron["Cron (scheduler)"] --> ingest
+
+    %% Andmebaas (PostgreSQL)
+    subgraph db[PostgreSQL]
+        raw[(raw)]
+        staging[(staging)]
+        mart[(mart)]
+    end
+
+    %% Andmetöötlus
+    ingest --> raw
+    raw --> transform1["Puhastamine, ühtlustamine<br/>bash wrapper/Python/SQL"]
+
+    transform1 --> staging
+    staging --> transform2["Ühendamine, rikastamine<br/>bash wrapper/Python/SQL"]
+
+    transform2 --> mart
+
+    %% Tarbimine
+    mart --> dashboard["Näidikulaud (Superset)"]
+    raw -->  source3[Andmekvaliteedi testid]
+    staging --> source3[Andmekvaliteedi testid]
+    mart --> source3[Andmekvaliteedi testid]
+  
 ```
 
 Täpsem kirjeldus: [`docs/arhitektuur.md`](https://github.com/KulliPeed/Projektitoo_MREV/blob/main/docs/arhitektuur.md)

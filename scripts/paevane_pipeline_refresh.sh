@@ -99,6 +99,25 @@ perform_refresh() {
   show_pipeline_freshness
   echo
 
+  echo "6) Andmekvaliteedi tulemuste salvestamine"
+  if [ "${RUN_DATA_QUALITY_CHECKS:-false}" = "true" ]; then
+    PYTHON_BIN="${PYTHON_BIN:-$PROJECT_DIR/.venv/bin/python}"
+    if [ ! -x "$PYTHON_BIN" ]; then
+      PYTHON_BIN="python3"
+    fi
+    DATA_QUALITY_PIPELINE_NAME="paevane_pipeline_refresh" \
+      DATA_QUALITY_TRIGGERED_BY="pipeline" \
+      "$PYTHON_BIN" scripts/run_data_quality_checks.py || {
+        echo "Andmekvaliteedi runner andis tehnilise vea." >&2
+        if [ "${DATA_QUALITY_FAIL_PIPELINE:-false}" = "true" ]; then
+          exit 1
+        fi
+      }
+  else
+    echo "RUN_DATA_QUALITY_CHECKS=false, kvaliteedikontrollide runner jaeti vahele."
+  fi
+  echo
+
   echo "=== MREV paevane pipeline refresh DONE $(date +"%Y-%m-%d_%H%M%S") ==="
 }
 

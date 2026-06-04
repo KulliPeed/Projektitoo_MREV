@@ -1,11 +1,12 @@
-# [GRUPI NIMI] — [PROJEKTI PEALKIRI]
+# Makseraskustes ettevõtete juhatuse muutuste varajane tuvastamine
 
 > **Juhend:** Asenda kõik nurksulgudes vormid oma sisuga enne esitamist. Kustuta see juhendrida.
 
 ## Äriküsimus
 
 [Kirjelda ühe-kahe lausega, millise andmetega seotud probleemi te lahendate ja kes sellest kasu saab.]
-Eesmärgiks on luua automatiseeritud töövoog koos juhtimislaua vaadetega, mis võimaldab saada varajase ja ajakohase ülevaade ettevõtetest, millel esinevad makseraskused koos juhatuse muutustega ning jälgida selliste ettevõtete arvu ja maksuvõla summa muutust ajas ning võla vanuse gruppide lõikes.
+Eesmärgiks on välja selgitada, kui palju on maksuvõlas ettevõtteid, mille juhatus on muutunud viimase päeva jooksul ning milline on nende ettevõtete maksuvõla kogusumma päevase seisuga, jaotatuna võla vanuse gruppidesse (kuni 2 kuud, 2-5 kuud, 6-11 kuud, ≥ 1 aasta).
+Selleks loodud juhtimislaud, võimaldab saada varajase ja ajakohase ülevaate ettevõtetest, millel esinevad makseraskused koos juhatuse muutustega. Kasu saajateks on Maksu- ja Tolliamet, krdiidihalduse ettevõtted ja pankrotihaldurid, kuna juhatuse vahetus võib viidata probleemsete võlgadega ettevõtetele.
 
 **Mõõdikud:**
 
@@ -30,24 +31,24 @@ flowchart LR
     mart --> dashboard[Näidikulaud]
 ```
 
-Täpsem kirjeldus: [`docs/arhitektuur.md`](docs/arhitektuur.md)
+Täpsem kirjeldus: [`docs/arhitektuur.md`](https://github.com/KulliPeed/Projektitoo_MREV/blob/main/docs/arhitektuur.md)
 
 ## Andmestik
 
 | Allikas | Tüüp | Ajas muutuv? | Roll |
 |---------|------|--------------|------|
-| [Andmeallika nimi] | [API / fail / andmebaas] | Jah, [iga tund / päevas / muu] | Põhiandmevoog |
-| [Teise allika nimi] | [seed / dim-tabel] | Ei, staatiline | Kõrvaltabel |
+| [EMTA maksuvõla avaandmed](https://ncfailid.emta.ee/s/XKJLjtynFeYdGyC/download/maksuvolglaste_nimekiri.csv) | CSV | Jah, 1 kord päevas | Sisend ettevõtete maksuvõla olemasolu ja selle vanuse tuvastamisel |
+| [RIK Äriregistri avaandmed, kaardile kantud isikud](https://avaandmed.ariregister.rik.ee/sites/default/files/avaandmed/ettevotja_rekvisiidid__kaardile_kantud_isikud.json.zip) | JSON | Jah, 1 kord päevas | Sisend juhatuse liikmete seoste ja nende muutuste tuvastamisel |
 
 ## Stack
 
 | Komponent | Tööriist |
 |-----------|---------|
-| Sissevõtt | [Python / Airflow / muu] |
-| Transformatsioon | [SQL / dbt / muu] |
+| Sissevõtt | [Python / SQL / Bash wrapper] |
+| Transformatsioon | [Python / SQL / Bash wrapper] |
 | Andmehoidla | PostgreSQL |
-| Näidikulaud | [Superset / Streamlit / muu] |
-| Orkestreerimine | [Airflow / cron / muu] |
+| Näidikulaud | [Superset] |
+| Orkestreerimine | [cron] |
 
 ## Käivitamine
 
@@ -129,7 +130,9 @@ Testide tulemused: [kuhu salvestatakse / kuidas vaadata]
 
 | Nimi | Roll |
 |------|------|
-| [Nimi 1] | [Roll] |
-| [Nimi 2] | [Roll] |
-| [Nimi 3] | [Roll] |
-| [Nimi 4] | [Roll — vabatahtlik] |
+| Andrus Säde | Andmeallika omanik |
+| Andrus Säde/Tuuli Hani/Külli Peeduli | Transformatsioonide omanik |
+| Tuuli Hani/Külli Peeduli | Kvaliteedi omanik |
+| Külli Peeduli/Tuuli Hani | Näidikulaua omanik |
+
+Iga rolli juurde märgitud esimene isik on põhivastutaja ja teised märgitud on kaasvastutajad

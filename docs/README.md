@@ -108,8 +108,8 @@ Vajalikud muutujad:
 1. **Sissevõtt** — [Kirjelda, kuidas andmed allikast kätte saadakse]
 2. **Laadimine** — Andmed laaditakse `raw` kihti
 3. **Transformatsioon** — [Kirjelda peamised arvutused ja mudelid]
-4. **Testimine** — [Mitu] andmekvaliteedi testi kontrollivad korrektsust
-5. **Näidikulaud** — Näidikulaud näitab viimase päeva juhatuse vahetusega maksuvõlgnike nimekirja, juhatuse vahetusega ettevõtete arvu ja maksuvõlga, nende muutust ajas ning maksuvõlga maksuvõla vanusegruppides.
+4. **Testimine** — 18 andmekvaliteedi testi erinevate kihtide (raw, staging, mart) andmete kontrollimiseks, mis salvestuvad tabelisse quality.data_quality_results ja kuvatakse ka dashboardil.
+5. **Näidikulaud** — Näidikulaud näitab viimase päeva juhatuse vahetusega maksuvõlgnike nimekirja, juhatuse vahetusega ettevõtete arvu ja maksuvõlga, nende muutust ajas ning maksuvõlga maksuvõla vanusegruppides. Lisaks ka andmekvaliteedi testide tulemused.
 
 ## Andmekvaliteedi testid
 

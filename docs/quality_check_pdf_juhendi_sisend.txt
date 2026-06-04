@@ -1,0 +1,556 @@
+SISEND CHATGPT-LE PDF JUHENDI KOOSTAMISEKS
+
+Koosta alloleva info põhjal eesti keeles selge PDF-juhend teemal: "MREV andmekvaliteedi kontrollid ja Superset visualiseerimine".
+
+Juhendi sihtrühm:
+- Projektijuht või andmeanalüütik, kes peab aru saama, kas MREV andmepipeline töötab korrektselt.
+- Superseti kasutaja, kes peab quality tulemuste põhjal dashboardi ja chart'id valmis tegema.
+- Tehniline kasutaja, kes peab oskama runnerit käsitsi käivitada ja tulemusi andmebaasist kontrollida.
+
+Soovitud PDF-i stiil:
+- Praktiline juhend, mitte ainult teoreetiline kirjeldus.
+- Selged peatükid, samm-sammulised juhised ja tabelid.
+- Lisa eraldi jaotis "Kiire kontrollnimekiri".
+- Lisa eraldi jaotis "Superseti chart'ide loomine".
+- Lisa eraldi jaotis "Tõlgendamine: mida PASS, FAIL, WARN ja ERROR tähendavad".
+- Lisa SQL näited, mida saab Superset SQL Lab'is või psql-is kasutada.
+- Ära väida, et FAIL tähendab automaatselt pipeline'i katkemist. Vaikimisi see ei katkesta pipeline'i.
+
+1. Ülevaade
+
+MREV projektis on andmekvaliteedi kontrollid lisatud eraldi quality skeemi. Lahendus on tehtud turvalise esimese faasina:
+- olemasolevaid RAW, STAGE, MART ega MART_STAR ärikihi tabeleid ei muudeta;
+- olemasolevaid importimise transformatsioone ei muudeta;
+- olemasolevaid Superseti dashboarde ei muudeta;
+- andmekvaliteedi FAIL ei lõhu vaikimisi igapäevast pipeline'i;
+- kvaliteedikontrollide tulemused salvestatakse eraldi tabelitesse ja tehakse Superseti jaoks loetavateks vaadeteks.
+
+Keskne idee:
+- Pipeline tekitab või värskendab andmed RAW, STAGE ja MART_STAR kihtides.
+- Pärast seda saab käivitada runneri scripts/run_data_quality_checks.py.
+- Runner kontrollib andmete värskust, ridade arvu vastavust, võtmete kuju, NULL/negatiivseid väärtusi, faktitabeli terviklikkust ja allikastruktuuri.
+- Tulemused kirjutatakse quality skeemi.
+- Superset loeb quality vaateid ja nende põhjal saab teha chart'id ning dashboardi.
+
+2. Olulised failid
+
+Repo failid:
+- db/migrations/210_create_quality_tables.sql
+  Loob quality skeemi tabelid ja Superseti vaated ning annab superset_readonly rollile lugemisõigused.
+
+- scripts/run_data_quality_checks.py
+  Keskne runner, mis käivitab kõik kvaliteedikontrollid ja kirjutab tulemused quality tabelitesse.
+
+- scripts/paevane_pipeline_refresh.sh
+  Igapäevane pipeline skript. Selle lõppu on lisatud kvaliteedikontrollide hook, kuid vaikimisi on see välja lülitatud.
+
+Olemasolevad vanad quality SQL failid:
+- quality/010_stage_quality_checks.sql
+- quality/020_stage_snapshot_quality_checks.sql
+- quality/030_mart_quality_checks.sql
+- quality/040_mart_star_quality_checks.sql
+
+Need vanad SQL kontrollid võivad kasutada RAISE EXCEPTION loogikat ja kuuluvad olemasoleva pipeline'i varasema kontrolliloogika juurde. Uus runner on eraldi tulemuste salvestamise lahendus.
+
+3. Quality skeemi objektid
+
+Migratsioon loob skeemi quality ja järgmised tabelid:
+
+Tabel: quality.data_quality_runs
+Eesmärk: üks kirje iga runneri käivituse kohta.
+Olulised veerud:
+- run_id: ühe käivituse unikaalne ID;
+- started_at: käivituse algus;
+- finished_at: käivituse lõpp;
+- triggered_by: kes või mis käivitas;
+- pipeline_name: näiteks manual või paevane_pipeline_refresh;
+- status: RUNNING, PASS, FAIL või ERROR;
+- message: lühikirjeldus.
+
+Tabel: quality.data_quality_results
+Eesmärk: iga konkreetse kontrolli tulemus ühe run'i sees.
+Olulised veerud:
+- run_id;
+- layer_name: RAW, STAGE, MART_STAR, FACT, RAW_STAGE jne;
+- check_name: kontrolli tehniline nimi;
+- check_group: kontrollide grupp, näiteks freshness, parity, integrity;
+- object_name: kontrollitav tabel või objekt;
+- source_name: MTA või RIK, kui rakendub;
+- status: PASS, WARN, FAIL, ERROR või SKIPPED;
+- severity: INFO, WARNING, HIGH või FATAL;
+- failed_count: vigaste kirjete või vigaste kontrolliüksuste arv;
+- total_count: kontrollitud koguarv;
+- expected_value: mida oodati;
+- actual_value: mis tegelikult leiti;
+- snapshot_date ja data_as_of: kuupäevakontekst;
+- details: JSON lisainfo.
+
+Tabel: quality.data_quality_bad_rows
+Eesmärk: salvestab näidisread kontrollidest, kus on võimalik vigased read eraldi välja tuua.
+Näide: vigase registrikoodiga MTA read.
+Olulised veerud:
+- run_id;
+- layer_name;
+- check_name;
+- object_name;
+- source_name;
+- source_file;
+- row_no;
+- business_key;
+- reason;
+- row_data: vigase rea JSON-kuju.
+
+Tabel: quality.source_structure_snapshots
+Eesmärk: salvestab allika struktuuri snapshot'id.
+Näited:
+- MTA CSV päise struktuur;
+- RIK JSON top-level struktuur.
+Olulised veerud:
+- source_name;
+- object_name;
+- snapshot_date;
+- structure_signature;
+- structure_payload;
+- is_current.
+
+4. Superseti jaoks loodud vaated
+
+Vaade: quality.v_data_quality_latest
+Eesmärk: viimase quality run'i kõik kontrollitulemused. See on kõige olulisem vaade dashboardi hetkeseisu jaoks.
+Kasutus Supersetis:
+- KPI: mitu kontrolli on PASS/FAIL/WARN/ERROR;
+- tabel: viimase run'i kontrollide detailid;
+- filter: layer_name, status, source_name.
+
+Vaade: quality.v_data_quality_history
+Eesmärk: ajalooline kontrollide tulemus. Sobib trendide jaoks.
+Kasutus Supersetis:
+- line chart FAIL count ajas;
+- stacked bar chart staatuste jaotus ajas;
+- tabel korduvate probleemide leidmiseks.
+
+Vaade: quality.v_data_quality_summary
+Eesmärk: üks rida iga run'i kohta koos kokkuvõtvate arvudega.
+Kasutus Supersetis:
+- Big Number: viimase run'i FAIL arv;
+- Time-series: checks_fail ajas;
+- bar chart: PASS/FAIL/WARN jaotus run'ide lõikes.
+
+Vaade: quality.v_data_quality_bad_rows
+Eesmärk: vigaste näidisridade kuvamine.
+Kasutus Supersetis:
+- Table chart vigaste ridadega;
+- filter check_name järgi;
+- drill-down konkreetse probleemi uurimiseks.
+
+5. Feature flag'id ja turvaline käitumine
+
+Pipeline hook on lisatud scripts/paevane_pipeline_refresh.sh skripti, kuid vaikimisi ei käivitu.
+
+Olulised keskkonnamuutujad:
+
+RUN_DATA_QUALITY_CHECKS
+- Vaikimisi: false
+- Kui false, siis igapäevane pipeline jätab quality runneri vahele.
+- Kui true, siis pipeline käivitab scripts/run_data_quality_checks.py pärast freshness kontrolli.
+
+DATA_QUALITY_FAIL_PIPELINE
+- Vaikimisi: false
+- Kui false, siis andmekontrollide FAIL ei katkesta pipeline'i.
+- Kui true, siis FAIL võib pipeline'i katkestada.
+- Tehniline runneri viga võib pipeline'i mõjutada ainult siis, kui fail-pipeline flag on sisse lülitatud.
+
+DB_PASSWORD või POSTGRES_PASSWORD
+- Runner vajab andmebaasiga ühendumiseks parooli.
+- Käsitsi testis kasutati näiteks DB_PASSWORD=andrus.
+
+Näide käsitsi käivitamiseks:
+
+DB_PASSWORD=andrus /home/pi/kool/projekt/.venv/bin/python /home/pi/kool/projekt/scripts/run_data_quality_checks.py
+
+Näide pipeline'is käivitamiseks:
+
+RUN_DATA_QUALITY_CHECKS=true DB_PASSWORD=andrus ./scripts/paevane_pipeline_refresh.sh
+
+6. Kontrollide nimekiri ja tähendus
+
+Runner käivitab 19 kontrolli.
+
+1) mta_raw_stage_parity
+Kiht: RAW_STAGE
+Kontrollib, et viimase MTA data_as_of kuupäeva RAW ridade arv ja STAGE ridade arv klapiksid.
+
+2) rik_raw_stage_parity
+Kiht: RAW_STAGE
+Kontrollib, et viimase RIK snapshot_date kuupäeva RAW ridade arv ja STAGE ridade arv klapiksid.
+
+3) stage_mta_bad_registrikood
+Kiht: STAGE
+Kontrollib MTA stage tabelis registrikoodi kuju. Oodatud on 8-kohaline number. Vigased read salvestatakse bad rows tabelisse.
+
+4) stage_mta_null_maksuvolg
+Kiht: STAGE
+Kontrollib, et MTA maksuvolg ei oleks NULL.
+
+5) stage_mta_negative_maksuvolg
+Kiht: STAGE
+Kontrollib, et maksuvolg ei oleks negatiivne.
+
+6) stage_rik_bad_registrikood
+Kiht: STAGE
+Kontrollib, et RIK ettevõtete registrikood oleks 8-kohaline number.
+
+7) stage_rik_duplicate_registrikood
+Kiht: STAGE
+Kontrollib, et viimase RIK snapshot'i ettevõtete registrikoodid ei oleks dubleeritud.
+
+8) mart_star_required_columns
+Kiht: MART_STAR
+Kontrollib, et mart_star skeemis oleksid vajalikud dimensiooni- ja faktitabelite veerud olemas.
+
+9) mart_star_snapshot_parity
+Kiht: MART_STAR
+Kontrollib, et stage MTA data_as_of kuupäevad oleksid esindatud mart_star fact_maksuvolg kuupäevades.
+
+10) raw_data_as_of_idempotent
+Kiht: RAW
+Kontrollib MTA raw importimise idempotentsust: row_hash olemasolu, unikaalsust ja source_file/file hash stabiilsust.
+
+11) stage_fact_maksuvolg_sum_parity
+Kiht: STAGE_FACT
+Kontrollib, et stage MTA maksuvola summa kuupäevade lõikes klapiks mart_star fact_maksuvolg summaga.
+
+12) fact_foreign_key_integrity
+Kiht: FACT
+Kontrollib, et fact_maksuvolg viited dimensioonidele oleksid olemas.
+
+13) fact_grain_uniqueness
+Kiht: FACT
+Kontrollib, et faktitabeli grain ei dubleeruks. Näiteks sama ettevõte ja kuupäev ei tohiks anda mitu faktirida, kui mudel seda ei eelda.
+
+14) fact_juhatuse_muutuse_not_null
+Kiht: FACT
+Kontrollib, et juhatuse_muutuse_fakt ei oleks NULL.
+
+15) raw_mta_download_success
+Kiht: RAW
+Kontrollib, et MTA tänane raw import oleks olemas ja ridade arv oleks suurem kui 0.
+
+16) raw_rik_download_success
+Kiht: RAW
+Kontrollib admin.raw_import_audit põhjal, et RIK tänane edukas import oleks olemas ja ridade arv oleks suurem kui 0. See on auditipõhine, et vältida suurt raw tabeli täisskanni.
+
+17) raw_source_structure_consistency MTA
+Kiht: RAW
+Kontrollib MTA CSV päise struktuuri ja salvestab struktuuri signature'i.
+
+18) raw_source_structure_consistency RIK
+Kiht: RAW
+Kontrollib RIK JSON top-level struktuuri ja salvestab struktuuri signature'i.
+
+19) raw_mta_date_fields_not_null
+Kiht: RAW
+Kontrollib, et MTA raw tabelis snapshot_date ja data_as_of ei oleks NULL.
+
+7. Staatuste tõlgendamine
+
+PASS
+Kontroll läbis. failed_count on 0.
+
+FAIL
+Kontroll leidis andmekvaliteedi probleemi. See ei tähenda vaikimisi pipeline'i tehnilist ebaõnnestumist. FAIL tuleb analüüsida Supersetis või SQL-is.
+
+WARN
+Hoiatus. Näiteks allika struktuur muutus, kuid otsene purunemine ei pruugi olla toimunud.
+
+ERROR
+Runner või konkreetne kontroll sai tehnilise vea. See vajab tehnilist uurimist.
+
+SKIPPED
+Kontroll jäeti vahele, näiteks puuduvate eelduste tõttu.
+
+8. Viimase testkäivituse näide
+
+Viimase käsitsi test-run'i info:
+- run_id: e7891180-5f33-40b0-9470-dd67d8ba111c
+- status: FAIL
+- kestus: umbes 8.7 sekundit
+- tulemused: PASS=16, FAIL=3
+- runneri exit code: 0
+
+Leitud FAIL-id:
+- stage_mta_bad_registrikood: 10 vigast MTA registrikoodi;
+- mart_star_snapshot_parity: 1 stage snapshot puudub mart_star faktis;
+- stage_fact_maksuvolg_sum_parity: 10 kuupäeva puhul stage ja fact summa erineb.
+
+Bad rows:
+- stage_mta_bad_registrikood: 10 näidisrida salvestatud quality.data_quality_bad_rows tabelisse.
+
+Oluline: need FAIL-id on andmekvaliteedi tulemused, mitte tõend, et runner tehniliselt katki on.
+
+9. Kontroll-SQL näited
+
+Viimane run:
+
+SELECT
+    run_id,
+    status,
+    message,
+    started_at,
+    finished_at,
+    round(extract(epoch from (finished_at - started_at))::numeric, 3) AS duration_sec
+FROM quality.data_quality_runs
+ORDER BY started_at DESC
+LIMIT 1;
+
+Viimase run'i staatuste kokkuvõte:
+
+SELECT status, count(*)
+FROM quality.data_quality_results
+WHERE run_id = (
+    SELECT run_id
+    FROM quality.data_quality_runs
+    ORDER BY started_at DESC
+    LIMIT 1
+)
+GROUP BY status
+ORDER BY status;
+
+Viimase run'i FAIL-id:
+
+SELECT
+    check_name,
+    status,
+    failed_count,
+    total_count,
+    actual_value
+FROM quality.v_data_quality_latest
+WHERE status = 'FAIL'
+ORDER BY check_name;
+
+Bad rows kontrollide lõikes:
+
+SELECT check_name, count(*)
+FROM quality.data_quality_bad_rows
+WHERE run_id = (
+    SELECT run_id
+    FROM quality.data_quality_runs
+    ORDER BY started_at DESC
+    LIMIT 1
+)
+GROUP BY check_name
+ORDER BY check_name;
+
+Superset rolli kontroll:
+
+SET ROLE superset_readonly;
+SELECT 'latest' AS view_name, count(*) FROM quality.v_data_quality_latest;
+SELECT 'history' AS view_name, count(*) FROM quality.v_data_quality_history;
+SELECT 'summary' AS view_name, count(*) FROM quality.v_data_quality_summary;
+SELECT 'bad_rows' AS view_name, count(*) FROM quality.v_data_quality_bad_rows;
+RESET ROLE;
+
+10. Superseti chart'ide loomine
+
+Soovituslik dashboardi nimi:
+MREV Andmekvaliteedi Kontrollid
+
+Soovituslikud datasetid Supersetis:
+- quality.v_data_quality_latest
+- quality.v_data_quality_history
+- quality.v_data_quality_summary
+- quality.v_data_quality_bad_rows
+
+Chart 1: Viimase run'i üldstaatus
+Dataset: quality.v_data_quality_summary
+Chart type: Big Number
+Metric: checks_fail
+Filter või sort: started_at DESC, viimase run'i rida
+Pealkiri: Viimase kontrolli FAIL arv
+Tõlgendus: kui väärtus on 0, siis viimases run'is FAIL puudus. Kui >0, tuleb vaadata detailtabelit.
+
+Chart 2: PASS/FAIL jaotus viimases run'is
+Dataset: quality.v_data_quality_latest
+Chart type: Pie Chart või Bar Chart
+Dimension: status
+Metric: count(*)
+Pealkiri: Viimase run'i kontrollide staatused
+
+Chart 3: FAIL-id kihtide lõikes
+Dataset: quality.v_data_quality_latest
+Chart type: Bar Chart
+Dimension: layer_name
+Metric: SUM(failed_count) või count(*) filtriga status='FAIL'
+Filter: status = FAIL
+Pealkiri: FAIL kontrollid kihtide lõikes
+
+Chart 4: Kontrollide detailtabel
+Dataset: quality.v_data_quality_latest
+Chart type: Table
+Veerud:
+- layer_name
+- check_name
+- source_name
+- status
+- failed_count
+- total_count
+- expected_value
+- actual_value
+- message
+Pealkiri: Viimase run'i kontrollide detailid
+
+Chart 5: FAIL trend ajas
+Dataset: quality.v_data_quality_summary
+Chart type: Time-series Line Chart
+Time column: started_at
+Metric: checks_fail
+Pealkiri: Andmekvaliteedi FAIL trend
+
+Chart 6: Kontrollide ajalugu staatuse järgi
+Dataset: quality.v_data_quality_history
+Chart type: Stacked Bar Chart
+Time column: checked_at või started_at
+Dimension: status
+Metric: count(*)
+Pealkiri: Kontrollide staatuste ajalugu
+
+Chart 7: Korduvad probleemid
+Dataset: quality.v_data_quality_history
+Chart type: Table või Bar Chart
+Dimension: check_name
+Metric: count(*) filtriga status='FAIL'
+Pealkiri: Kõige sagedasemad FAIL kontrollid
+
+Chart 8: Vigased näidisread
+Dataset: quality.v_data_quality_bad_rows
+Chart type: Table
+Veerud:
+- checked_at
+- check_name
+- object_name
+- source_name
+- source_file
+- row_no
+- business_key
+- reason
+- row_data
+Pealkiri: Vigaste ridade näited
+
+Chart 9: Allikastruktuuri viimased snapshot'id
+Dataset: quality.source_structure_snapshots või eraldi SQL dataset
+Chart type: Table
+Veerud:
+- captured_at
+- source_name
+- object_name
+- snapshot_date
+- structure_signature
+- is_current
+Pealkiri: Allika struktuuri snapshot'id
+
+11. Dashboardi filtrid
+
+Lisa dashboardile järgmised filtrid:
+- status
+- layer_name
+- source_name
+- check_group
+- check_name
+- started_at või checked_at ajavahemik
+
+Soovitus:
+- Ülemises reas KPI kaardid.
+- Keskel trendid ja staatuste jaotus.
+- Alumises osas detailtabelid ja bad rows.
+
+12. Kuidas tulemusi lugeda
+
+Kui dashboardil checks_fail = 0:
+- Viimane quality run ei leidnud andmekvaliteedi FAIL-e.
+- Kontrolli siiski WARN/ERROR väärtusi.
+
+Kui checks_fail > 0:
+- Ava detailtabel v_data_quality_latest pealt.
+- Vaata check_name, actual_value ja message veerge.
+- Kui bad rows on olemas, ava v_data_quality_bad_rows.
+- Tee kindlaks, kas probleem on allikas, stage transformatsioonis või mart_star koonduses.
+
+Kui ERROR > 0:
+- Tegemist võib olla tehnilise veaga runneris või andmebaasi ühenduses.
+- Kontrolli runneri logi ja data_quality_runs.message väärtust.
+
+Kui raw_*_download_success FAIL:
+- Kontrolli, kas tänane RAW import tegelikult õnnestus.
+- MTA puhul vaata raw.mta_maksuvolglased_csv viimast data_as_of kuupäeva.
+- RIK puhul vaata admin.raw_import_audit viimast edukat kirjet dataset_name='rik_kaardile_kantud_isikud_json'.
+
+Kui stage/fact parity FAIL:
+- Kontrolli, kas stage ja mart_star on samal kuupäeval värskendatud.
+- Kontrolli, kas mart_star refresh jooksis pärast stage refreshi.
+
+13. Ärikihtide turvakontroll
+
+Quality runner ei tohi muuta ärikihi tabeleid. Testis kontrolliti enne ja pärast row count'id üle.
+
+Näited live kontrolli row count'idest:
+- raw.mta_maksuvolglased_csv: 279983
+- stage.mta_maksuvolglased: 261986
+- raw.rik_kaardile_kantud_isikud_json: 6330060
+- stage.rik_ettevotted: 6330060
+- stage.rik_kaardile_kantud_isikud: 8800573
+- mart_star.dim_ettevote: 22539
+- mart_star.dim_aeg: 14
+- mart_star.dim_vanuse_grupp: 4
+- mart_star.fact_maksuvolg: 261972
+
+Need arvud jäid quality runneri käivitamisel samaks.
+
+14. Rollid ja ligipääs
+
+Superseti lugemisroll:
+- superset_readonly
+
+Migratsioon annab sellele rollile:
+- USAGE quality skeemile;
+- SELECT õiguse quality tabelitele ja vaadetele;
+- default privileges tulevastele quality objektidele.
+
+15. Rollback ja väljalülitamine
+
+Kiire väljalülitus:
+- Ära määra RUN_DATA_QUALITY_CHECKS=true.
+- Või määra RUN_DATA_QUALITY_CHECKS=false.
+
+Kui pipeline'is quality runner on sisse lülitatud ja seda tahetakse ajutiselt välja lülitada:
+
+RUN_DATA_QUALITY_CHECKS=false ./scripts/paevane_pipeline_refresh.sh
+
+Kui on vaja kood tagasi võtta:
+- revertida commit, mis lisas quality runneri ja migratsiooni.
+
+Kui on vaja DB objektid eemaldada:
+- Eemalda kõigepealt vaated.
+- Ära dropi quality tabeleid enne, kui ajalugu pole enam vaja.
+- Äärmuslik rollback: DROP SCHEMA quality CASCADE; kuid see kustutab ka quality ajaloo.
+
+16. PDF juhendi soovitud lõppstruktuur
+
+Palun koosta PDF järgmise struktuuriga:
+
+1. Tiitelleht
+2. Lühikokkuvõte
+3. Arhitektuur: RAW -> STAGE -> MART_STAR -> QUALITY -> SUPERSET
+4. Quality tabelid ja vaated
+5. Runneri tööpõhimõte
+6. Feature flag'id ja turvaline käitumine
+7. Kontrollide nimekiri
+8. Käsitsi käivitamine ja SQL kontrollid
+9. Superseti datasetid
+10. Superseti chart'ide loomine samm-sammult
+11. Dashboardi soovituslik paigutus
+12. Tulemuste tõlgendamine
+13. Probleemide uurimise juhend
+14. Rollback ja hooldus
+15. Lisa: SQL näited
+
+Lõplik PDF peaks olema selline, et kasutaja saab selle järgi Supersetis quality dashboardi nullist valmis teha.

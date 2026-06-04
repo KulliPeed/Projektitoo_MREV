@@ -120,24 +120,26 @@ Projekt kontrollib järgmist:
 3. [Test 3 - nt: kuupäev jääb vahemikku 2020-2026]
 [Lisa rohkem, kui sul on]
 
-| check_name                       | message                                                                 | layer_name | check_group           | source_name | expected_value                                                                 |
-|----------------------------------|-------------------------------------------------------------------------|------------|------------------------|-------------|---------------------------------------------------------------------------------|
-| fact_foreign_key_integrity       | FACT tabelis leidub võõrvõtmeid, millel puudub vaste dimensioonides.   | FACT       | referential_integrity | MART_STAR   | 0 missing dimension references                                                  |
-| raw_data_as_of_idempotent        | RAW kihis on mitu snapshoti sama kuupäevaga.                            | RAW        | idempotency           | MTA         | row_hash count equals rows and no duplicate row_hashes in latest data_as_of     |
-| raw_rik_download_success         | RIK andmete allalaadimine ebaõnnestus või ridade arv puudub.           | RAW        | freshness             | RIK         | latest successful RIK audit snapshot is current_date and rows > 0               |
-| rik_raw_stage_parity             | RIK RAW ja STAGE ridade arv ei klapi.                                   | RAW_STAGE  | parity                | RIK         | stage_count=372642                                                              |
-| stage_fact_maksuvolg_sum_parity  | Maksuvõla summa STAGE ja FACT kihis ei klapi lubatud piirides.          | STAGE_FACT | parity                | MTA         | abs(stage_sum - fact_sum) <= 1.0 for every date                                 |
-| raw_source_structure_consistency | Allikandmete struktuur või veerunimed on muutunud.                      | RAW        | source_structure      | MTA         | MTA CSV header equals expected parser header and signature unchanged            |
-| stage_rik_bad_registrikood       | RIK registrikood ei vasta formaadile või on tühi.                       | STAGE      | format_validation     | RIK         | 0 bad registrikood rows                                                         |
-| raw_rik_download_success         | RIK andmete allalaadimine ebaõnnestus või ridade arv puudub.           | RAW        | freshness             | RIK         | latest snapshot_date is current_date and rows > 0                               |
-| stage_rik_duplicate_registrikood | RIK snapshotis esineb duplikaatregistrikoode.                           | STAGE      | uniqueness            | RIK         | 0 duplicate registrikood groups                                                 |
-| stage_mta_negative_maksuvolg     | MTA maksuvõlg sisaldab negatiivseid väärtusi.                           | STAGE      | value_validation      | MTA         | 0 negative maksuvolg rows                                                       |
-| mart_star_snapshot_parity        | FACT snapshotide arv ei klapi STAGE snapshotidega.                      | MART_STAR  | parity                | MART_STAR   | all stage data_as_of dates exist in fact kuupaev                                |
-| raw_mta_date_fields_not_null     | MTA andmetes puuduvad kuupäevaväljad või sisaldavad NULL väärtusi.      | RAW        | value_validation      | MTA         | snapshot_date and data_as_of are not null                                       |
-| stage_mta_bad_registrikood       | MTA registrikood ei vasta formaadile või puudub.                        | STAGE      | format_validation     | MTA         | 0 bad registrikood rows                                                         |
-| fact_grain_uniqueness            | FACT tabelis esineb duplikaatridu sama ettevõtte ja kuupäeva kohta.     | FACT       | uniqueness            | MART_STAR   | one row per dim_ettevote_id and kuupaev                                         |
-| stage_mta_null_maksuvolg         | MTA maksuvõlg sisaldab NULL väärtusi.                                   | STAGE      | value_validation      | MTA         | 0 NULL maksuvolg rows                                                           |
-| raw_mta_download_success         | MTA andmete allalaadimine ebaõnn
+| Testi number | Testi nimi                       | Testi sõnum                                                                 | DB kiht    | Allikas    |
+|--------------|----------------------------------|-------------------------------------------------------------------------------|------------|------------|
+| TEST 1       | fact_foreign_key_integrity       | FACT tabelis leidub võõrvõtmeid, millel puudub vaste dimensioonides.         | FACT       | MART_STAR  |
+| TEST 2       | raw_data_as_of_idempotent        | RAW kihis on mitu snapshoti sama kuupäevaga.                                 | RAW        | MTA        |
+| TEST 3       | raw_rik_download_success         | RIK andmete allalaadimine ebaõnnestus või ridade arv puudub.                 | RAW        | RIK        |
+| TEST 4       | rik_raw_stage_parity             | RIK RAW ja STAGE ridade arv ei klapi.                                        | RAW_STAGE  | RIK        |
+| TEST 5       | stage_fact_maksuvolg_sum_parity  | Maksuvõla summa STAGE ja FACT kihis ei klapi lubatud piirides.               | STAGE_FACT | MTA        |
+| TEST 6       | stage_rik_bad_registrikood       | RIK registrikood ei vasta formaadile või on tühi.                             | STAGE      | RIK        |
+| TEST 7       | stage_rik_duplicate_registrikood | RIK snapshotis esineb duplikaatregistrikoode.                                 | STAGE      | RIK        |
+| TEST 8       | stage_mta_negative_maksuvolg     | MTA maksuvõlg sisaldab negatiivseid väärtusi.                                 | STAGE      | MTA        |
+| TEST 9       | mart_star_snapshot_parity        | FACT snapshotide arv ei klapi STAGE snapshotidega.                            | MART_STAR  | MART_STAR  |
+| TEST 10      | raw_mta_date_fields_not_null     | MTA andmetes puuduvad kuupäevaväljad või sisaldavad NULL väärtusi.            | RAW        | MTA        |
+| TEST 11      | stage_mta_bad_registrikood       | MTA registrikood ei vasta formaadile või puudub.                              | STAGE      | MTA        |
+| TEST 12      | fact_grain_uniqueness            | FACT tabelis esineb duplikaatridu sama ettevõtte ja kuupäeva kohta.           | FACT       | MART_STAR  |
+| TEST 13      | stage_mta_null_maksuvolg         | MTA maksuvõlg sisaldab NULL väärtusi.                                         | STAGE      | MTA        |
+| TEST 14      | raw_mta_download_success         | MTA andmete allalaadimine ebaõnnestus või ridade arv puudub.                 | RAW        | MTA        |
+| TEST 15      | raw_source_structure_consistency | Allikandmete struktuur või veerunimed on muutunud.                            | RAW        | RIK        |
+| TEST 16      | mta_raw_stage_parity             | MTA RAW ja STAGE ridade arv ei klapi.                                         | RAW_STAGE  | MTA        |
+| TEST 17      | mart_star_required_columns       | MART_STAR veerud puuduvad.                                                    | MART_STAR  | MART_STAR  |
+| TEST 18      | fact_juhatuse_muutuse_not_null   | FACT tabelis juhatuse_muutuse_fakt sisaldab NULL väärtusi.                   | FACT       | MART_STAR  |
 
 Testide tulemused: [kuhu salvestatakse / kuidas vaadata]
 

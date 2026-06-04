@@ -21,9 +21,11 @@ Eesmärgiks on luua automatiseeritud töövoog koos juhtimislaua vaadetega, mis 
 
 ```mermaid
 flowchart LR
-    source[Andmeallikas] --> ingest[Sissevõtt]
-    ingest --> staging[(staging)]
-    staging --> transform[Transformatsioon]
+    source[Andmeallikad] --> ingest[Sissevõtt]
+    ingest --> raw[(raw)]
+    raw --> transform1[puhastamine ja ühtlustamine]
+    transform1[puhastamine ja ühtlustamine] --> staging[(staging)]
+    staging --> transform[Ühendamine ja rikastamine]
     transform --> mart[(mart)]
     mart --> dashboard[Näidikulaud]
 ```

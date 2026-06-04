@@ -5,12 +5,17 @@
 ## Äriküsimus
 
 [Kirjelda ühe-kahe lausega, millise andmetega seotud probleemi te lahendate ja kes sellest kasu saab.]
+Eesmärgiks on luua automatiseeritud töövoog koos juhtimislaua vaadetega, mis võimaldab saada varajase ja ajakohase ülevaade ettevõtetest, millel esinevad makseraskused koos juhatuse muutustega ning jälgida selliste ettevõtete arvu ja maksuvõla summa muutust ajas ning võla vanuse gruppide lõikes.
 
 **Mõõdikud:**
 
-1. [Esimene KPI või mõõdik — näiteks: päevane müük poe kohta]
-2. [Teine KPI või mõõdik]
-3. [Kolmas KPI või mõõdik — vabatahtlik]
+1. Juhatuse muutusega maksuvõlglaste arv viimasel päeval
+2. Juhatuse muutusega maksuvõlglaste maksuvõlg viimasel päeval
+3. Maksuvõlglaste arv kokku viimasel päeval ?? (Kas paneme?)
+4. Päevade lõikes juhatuse muutusega ettevõtete maksuvõla kogusumma võla vanuse gruppides
+5. Juhatuse liikme vahetusega maksuvõlglaste nimekiri
+6. Päevade lõikes juhatuse muutuse faktiga ettevõtete arv ja ettevõtete arv, kus juhatus ei muutunud (Kas paneme??)
+
 
 ## Arhitektuur
 

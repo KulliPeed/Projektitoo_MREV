@@ -79,10 +79,10 @@ flowchart LR
 
 | Risk | Mõju | Maandus |
 |------|------|---------|
-| Risk 1 — EMTA päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | Veateavitus+uus andmete laadimise/sissevõtu käivitus  |
-| Risk 2 -  RIK päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | a) Veateavitus+uus andmete laadimise/sissevõtu käivitus; b) muutuse arvutuses viimase saadaoleva snapshoti kasutus |
-| Risk 3 -  allikandmete struktuur on muutunud | andmed jäävad uuendamata | Veateavitus+koodimuudatus ja andmete sissevõtu taaskäivitus |
-| Risk 4 - võla summa puudub | ei klassifitseeru võlaga ettevõtteks | Kui viimases saadaolevas snapshotis võla summa puudus, jätab ettevõtte kirje järgmisse kihti (intermediate) lisamata |
+| Risk 1 — EMTA päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | Veateavitus juhtimislaual + uus andmete laadimise/sissevõtu käivitus  |
+| Risk 2 -  RIK päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | Veateavitus juhtimislaual + uus andmete laadimise/sissevõtu käivitus |
+| Risk 3 -  allikandmete struktuur on muutunud | andmed jäävad uuendamata | Veateavitus juhtimislaual + koodimuudatus ja andmete sissevõtu taaskäivitus |
+| Risk 4 - võla summa puudub | ei klassifitseeru võlaga ettevõtteks | Kui viimases saadaolevas snapshotis võla summa puudus, jätab ettevõtte kirje järgmisse kihti (staging) lisamata |
 
 ## Privaatsus ja turve
 

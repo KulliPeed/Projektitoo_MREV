@@ -36,7 +36,7 @@ flowchart LR
     %% Andmebaas (PostgreSQL)
     subgraph db[PostgreSQL]
         raw[(raw)]
-        staging[(staging)]
+        stage[(stage)]
         mart[(mart)]
     end
 
@@ -44,15 +44,15 @@ flowchart LR
     ingest --> raw
     raw --> transform1["Puhastamine, ühtlustamine<br/>bash wrapper/Python/SQL"]
 
-    transform1 --> staging
-    staging --> transform2["Ühendamine, rikastamine<br/>bash wrapper/Python/SQL"]
+    transform1 --> stage
+    stage --> transform2["Ühendamine, rikastamine<br/>bash wrapper/Python/SQL"]
 
     transform2 --> mart
 
     %% Tarbimine
     mart --> dashboard["Näidikulaud (Superset)"]
     raw -->  source3[Andmekvaliteedi testid]
-    staging --> source3[Andmekvaliteedi testid]
+    stage --> source3[Andmekvaliteedi testid]
     mart --> source3[Andmekvaliteedi testid]
   
 ```
@@ -62,8 +62,10 @@ flowchart LR
 | Kiht | Roll |
 |------|------|
 | `raw` | Hoiab allika andmeid töötlemata kujul. |
-| `staging` | Puhastatud ja ühtlustatud andmed. |
-| `mart` | Hoiab transformeeritud ja äriloogikat sisaldavaid tabeleid. |
+| `stage` | Puhastatud ja ühtlustatud andmed. |
+| `mart*` | Hoiab transformeeritud ja äriloogikat sisaldavaid tabeleid. |
+
+*\* MART kihti on loodud andmebaasi skeem MART_STAR*
 
 ## Tööjaotus
 
@@ -82,7 +84,7 @@ flowchart LR
 | Risk 1 — EMTA päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | Veateavitus juhtimislaual + uus andmete laadimise/sissevõtu käivitus  |
 | Risk 2 -  RIK päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | Veateavitus juhtimislaual + uus andmete laadimise/sissevõtu käivitus |
 | Risk 3 -  allikandmete struktuur on muutunud | andmed jäävad uuendamata | Veateavitus juhtimislaual + koodimuudatus ja andmete sissevõtu taaskäivitus |
-| Risk 4 - võla summa puudub | ei klassifitseeru võlaga ettevõtteks | Kui viimases saadaolevas snapshotis võla summa puudus, jätab ettevõtte kirje järgmisse kihti (staging) lisamata |
+| Risk 4 - võla summa puudub | ei klassifitseeru võlaga ettevõtteks | Kui viimases saadaolevas snapshotis võla summa puudus, jätab ettevõtte kirje järgmisse kihti (stage) lisamata |
 
 ## Privaatsus ja turve
 

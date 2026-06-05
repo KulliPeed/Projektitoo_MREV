@@ -70,8 +70,8 @@ Täpsem kirjeldus: [`docs/arhitektuur.md`](https://github.com/KulliPeed/Projekti
 
 ```bash
 # 1. Klooni repo ja liigu kausta
-git clone <https://github.com/KulliPeed/Projektitoo_MREV>
-cd <projekti-kaust>
+git clone <https://github.com/KulliPeed/Projektitoo_MREV.git>
+cd <Projektitoo_MREV>
 
 # 2. Kopeeri keskkonnamuutujad
 cp .env.example .env

@@ -1,2 +1,0 @@
-# Projektitoo_MREV
-Andmeinseneride täiendkoolitusprogrammi projektitöö failid

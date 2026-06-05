@@ -20,7 +20,7 @@ Selleks loodud juhtimislaud võimaldab saada varajase ja ajakohase ülevaate ett
 ```mermaid
 flowchart LR
     %% Andmeallikad
-    source1[EMTA maksuvõla andmed] --> ingest["Sissevõtt<br/>bash wrapper/Python/SQL"]
+    source1[EMTA maksuvõla andmed] --> ingest["Sissevõtt<br/>bash wrapper/Python/SQL:<br/> 09:30 MTA sissevõtt ja 12:00 RIK sissevõtt"]
     source2[RIK äriregistri andmed] --> ingest
 
     %% Scheduler / orkestreerimine

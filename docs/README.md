@@ -138,18 +138,43 @@ Testide tulemused: salvestatakse quality.data_quality_results tabelisse ja on n�
 
 ## Projekti struktuur
 
-```
+```text
 .
 ├── README.md
-├── compose.yml
+├── docker-compose.yml
+├── docker-compose.superset.yml
 ├── .env.example
+├── .env.superset.example
 ├── .gitignore
-├── docs/
-│   ├── arhitektuur.md      ← nädal 1 väljund
-│   └── progress.md         ← nädal 2 väljund
-└── ...                     ← ülejäänud projektifailid
+├── scripts/
+│   ├── paevane_mta_maksuvolglased.sh
+│   ├── paevane_rik_snapshot.sh
+│   ├── paevane_pipeline_refresh.sh
+│   ├── refresh_stage_incremental.sh
+│   ├── refresh_stage_snapshot.sh
+│   ├── refresh_mart_star.sh
+│   ├── run_data_quality_checks.py
+│   ├── setup_superset_postgres.sh
+│   └── configure_superset_mrev.sh
+├── db/
+│   └── migrations/
+│       ├── 010_create_stage_mta_maksuvolglased.sql
+│       ├── 020_create_stage_rik_ettevotted.sql
+│       ├── 030_create_stage_rik_kaardile_kantud_isikud.sql
+│       ├── 091_refresh_stage_snapshot.sql
+│       ├── 130_create_mart_star_schema.sql
+│       └── 210_create_quality_tables.sql
+├── quality/
+│   ├── 010_stage_quality_checks.sql
+│   ├── 020_stage_snapshot_quality_checks.sql
+│   └── 040_mart_star_quality_checks.sql
+├── superset/
+│   └── superset_config.py
+├── data/
+│   └── raw/
+├── logs/
+└── docs/
 ```
-
 ## Kokkuvõte, puudused ja võimalikud edasiarendused
 
 **Kokkuvõte:**

@@ -26,7 +26,7 @@ flowchart LR
     %% Andmebaas (PostgreSQL)
     subgraph db[PostgreSQL]
         raw[(raw)]
-        staging[(staging)]
+        stage[(stage)]
         mart[(mart)]
     end
 
@@ -34,15 +34,15 @@ flowchart LR
     ingest --> raw
     raw --> transform1["Puhastamine, ühtlustamine<br/>bash wrapper/Python/SQL"]
 
-    transform1 --> staging
-    staging --> transform2["Ühendamine, rikastamine<br/>bash wrapper/Python/SQL"]
+    transform1 --> stage
+    stage --> transform2["Ühendamine, rikastamine<br/>bash wrapper/Python/SQL"]
 
     transform2 --> mart
 
     %% Tarbimine
     mart --> dashboard["Näidikulaud (Superset)"]
     raw -->  source3[Andmekvaliteedi testid]
-    staging --> source3[Andmekvaliteedi testid]
+    stage --> source3[Andmekvaliteedi testid]
     mart --> source3[Andmekvaliteedi testid]
   
 ```
@@ -89,31 +89,31 @@ Näidikulaud: http://localhost:[PORT]
 
 ## Saladused ja konfiguratsioon
 
-Kõik paroolid, secret key väärtused ja andmebaasi DSN-id peavad olema `.env` või `.env.superset` failides. Päris `.env` ja `.env.superset` faile ei tohi GitHubi commit'ida. Repos peab olema ainult näidisfail, näiteks `.env.superset.example`.
+Kõik paroolid, secret key väärtused ja andmebaasi DSN-id peavad olema `.env` või `.env.superset` failides. Päris `.env` ja `.env.superset` faile ei tohi GitHubi commit'ida. Repos peab olema ainult näidisfail, näiteks `.env.superset.example` ja  `.env.example`.
 
 | Muutuja | Tähendus | Näide |
 |---|---|---|
-| `DB_PASSWORD` või `POSTGRES_PASSWORD` | PostgreSQL parool raw loaderite ja quality runneri jaoks | `<redacted>` |
+| `DB_PASSWORD` või `POSTGRES_PASSWORD` | PostgreSQL parool raw loaderite ja quality runneri jaoks | `<redigeeritud>` |
 | `RUN_DATA_QUALITY_CHECKS` | Kas 13:30 pipeline käivitab quality runneri | `false` vaikimisi, `true` kui vaja |
 | `DATA_QUALITY_FAIL_PIPELINE` | Kas quality FAIL katkestab pipeline'i | `false` vaikimisi |
-| `SUPERSET_SECRET_KEY` | Superseti secret key | `<redacted>` |
-| `SUPERSET_METADATA_DB_URI` | Superseti metadata DB SQLAlchemy DSN | `<redacted>` |
+| `SUPERSET_SECRET_KEY` | Superseti secret key | `<redigeeritud>` |
+| `SUPERSET_METADATA_DB_URI` | Superseti metadata DB SQLAlchemy DSN | `<redigeeritud>` |
 | `SUPERSET_READONLY_DB_USER` | Superseti lugemisroll | `superset_readonly` |
-| `SUPERSET_READONLY_DB_PASSWORD` | Superseti lugemisrolli parool | `<redacted>` |
+| `SUPERSET_READONLY_DB_PASSWORD` | Superseti lugemisrolli parool | `<redigeeritud>` |
 
 ## Andmevoog lühidalt
 
 1. **Sissevõtt** —  Cron käivitab skriptid, mis laevad MTA CSV ja RIK JSON ZIP failid alla.
 2. **Laadimine** — Andmed laaditakse RAW kihti.
 3. **Transformatsioon** — [Kirjelda peamised arvutused ja mudelid]  `refresh_stage_incremental.sh` leiab puuduvad RAW snapshotid ja värskendab ainult vajalikud kuupäevad. `refresh_mart_star.sh` ehitab faktitabeli, ühendab MTA ja RIKi andmed ja arvutab vajalikud faktid (nt juhatuse muutuse, võla vanuse grupid jm) ja dimensioonid stage andmete põhjal.
-4. **Testimine** — `run_data_quality_checks.py` kirjutab 18 andmekvaliteedi testi erinevate kihtide (raw, staging, mart) andmete kontrollimiseks, mis salvestuvad `quality` skeemi  (sh. quality.data_quality_results tabelisse) ja kuvatakse ka dashboardil.
+4. **Testimine** — `run_data_quality_checks.py` kirjutab 18 andmekvaliteedi testi erinevate kihtide (raw, stage, mart) andmete kontrollimiseks, mis salvestuvad `quality` skeemi  (sh. quality.data_quality_results tabelisse) ja kuvatakse ka dashboardil.
 5. **Näidikulaud** — Näidikulaud näitab viimase päeva juhatuse vahetusega maksuvõlgnike nimekirja, juhatuse vahetusega ettevõtete arvu ja maksuvõlga, nende muutust ajas ning maksuvõlga maksuvõla vanusegruppides. Lisaks ka andmekvaliteedi testide tulemusi.
 
 ## Andmekvaliteedi testid
 
 Projekt kontrollib järgmist:
 
-| Testi number | Testi nimi                       | Testi sõnum                                                                 | DB kiht    | Allikas    |
+| Testi number | Testi nimi                       | Testi kontrollid                                                                 | DB kiht    | Allikas    |
 |--------------|----------------------------------|-------------------------------------------------------------------------------|------------|------------|
 | TEST 1       | fact_foreign_key_integrity       | FACT tabelis leidub võõrvõtmeid, millel puudub vaste dimensioonides.         | FACT       | MART_STAR  |
 | TEST 2       | raw_data_as_of_idempotent        | RAW kihis on mitu snapshoti sama kuupäevaga.                                 | RAW        | MTA        |
@@ -153,20 +153,19 @@ Testide tulemused: salvestatakse quality.data_quality_results tabelisse ja on n�
 ## Kokkuvõte, puudused ja võimalikud edasiarendused
 
 **Kokkuvõte:**
-- [Loetle, mis on lõpule viidud, mis töötab hästi]
-- Soovitud andmevoog toimib otsast lõpuni ja on terviklik (andmed laetakse automaatselt andmebaasi ja tulemid kajastuvad juhtimislaual).
+- Soovitud andmevoog toimib otsast lõpuni ja on terviklik (andmed laetakse automaatselt andmebaasi ja tulemid kajastuvad juhtimislaual). Automaatne päevane pipeline laeb MTA ja RIK andmed, ehitab stage ja mart_star kihid ning võimaldab tulemusi Supersetis vaadata.
 - Juhtimislaud kajastab õiget tulemit, vastab äriküsimusele ja kuvab ajas muutuvust.
-- Piisaval hulgal andmekvaliteedi kontrolle on loodud ja toovad välja olulisemad esineda võivad andmekvaliteedi probleemid juhtimislaual.
-- Töövoog on idempotentne ja korratav.
+- Piisaval hulgal andmekvaliteedi kontrolle on loodud ja toovad välja olulisemad esineda võivad andmekvaliteedi probleemid juhtimislaual. Andmekvaliteedi tulemused kirjutatakse eraldi quality skeemi.
+- RAW import on idempotentne ja logib tegevused admin.raw_import_audit tabelisse.
 
 **Puudused:**
-- [Loetle ausalt, mis jäi tegemata - see ei mõjuta hinnet negatiivselt, vaid aitab hinnata]
 - Kvaliteedi testid toovad välja mõningad probleemid mida ei peaks lugema veaks (nendega ei jõudnud tegeleda): nt. MTA andmed ei vasta formaadile aga MTA andmetes registrikood ei pea olema numbri formaadis, kuna nende hulgas esineb ka mitteresidente, kelle registrikood algab tähekombinatsiooniga. Andmekvaliteedi test "stage_mta_bad_registrikood" loeb sellised hetkel veaks.
-- Skriptide puhastamisega ei jõudnud tegeleda
+- Skriptide puhastamisega ei jõudnud tegeleda.
+- Andmekvaliteedi FAIL/WARN teavitusi me ei jõudnud luua, tekitasime ainult kokkuvõtte dashboardile.
 
 **Mis edasi:**
-- [Mida tahaksid edasi teha, kui aega oleks rohkem]
 - kõrvaldaks eelpool nimetatud puudused
+- README kõrvale võiks luua docs/runbook.md, mis kirjeldab, kuidas süsteemi töös hoida, monitoorida ja probleemide korral parandada.
 
 ## Meeskond
 

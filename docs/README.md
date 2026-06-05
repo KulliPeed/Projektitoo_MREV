@@ -63,11 +63,11 @@ Täpsem kirjeldus: [`docs/arhitektuur.md`](https://github.com/KulliPeed/Projekti
 
 | Komponent | Tööriist |
 |-----------|---------|
-| Sissevõtt | [Python / SQL / Bash wrapper] |
-| Transformatsioon | [Python / SQL / Bash wrapper] |
+| Sissevõtt | Python / SQL / Bash wrapper |
+| Transformatsioon | Python / SQL / Bash wrapper |
 | Andmehoidla | PostgreSQL |
-| Näidikulaud | [Superset] |
-| Orkestreerimine | [cron] |
+| Näidikulaud | Superset |
+| Orkestreerimine | cron |
 
 ## Käivitamine
 

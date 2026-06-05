@@ -67,25 +67,9 @@ Täpsem kirjeldus: [`docs/arhitektuur.md`](https://github.com/KulliPeed/Projekti
 | Orkestreerimine | cron |
 
 ## Käivitamine
+Andmevoog on üles ehitatud selliselt, et on võimalik käivitada vaid Andruse arvutist. Põhjus on selles, et äriküsimusele vastamiseks on vaja mitme päeva andmed alla laadida ja failid on suured, et neid omakorda ühise keskkonna vahendusel teistega jagada.
 
-```bash
-# 1. Klooni repo ja liigu kausta
-git clone <https://github.com/KulliPeed/Projektitoo_MREV.git>
-cd <Projektitoo_MREV>
-
-# 2. Kopeeri keskkonnamuutujad
-cp .env.example .env
-# Muuda .env failis paroolid ja muud seaded vastavalt vajadusele
-
-# 3. Käivita teenused
-docker compose up -d --build
-
-# 4. [Vabatahtlik: käivita sissevõtt käsitsi esimesel korral]
-# docker compose exec pipeline python scripts/run_pipeline.py run-all
-```
-
-Airflow (kui kasutatakse): http://localhost:8080 (kasutaja: airflow / parool: airflow)
-Näidikulaud: http://localhost:[PORT]
+Töötavat Superseti näeb grupi poolt valvestatud videost.
 
 ## Saladused ja konfiguratsioon
 

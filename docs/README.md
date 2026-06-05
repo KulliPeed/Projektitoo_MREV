@@ -105,7 +105,7 @@ Kõik paroolid, secret key väärtused ja andmebaasi DSN-id peavad olema `.env` 
 
 1. **Sissevõtt** —  Cron käivitab skriptid, mis laevad MTA CSV ja RIK JSON ZIP failid alla.
 2. **Laadimine** — Andmed laaditakse RAW kihti.
-3. **Transformatsioon** — [Kirjelda peamised arvutused ja mudelid]  `refresh_stage_incremental.sh` leiab puuduvad RAW snapshotid ja värskendab ainult vajalikud kuupäevad. `refresh_mart_star.sh` ehitab faktitabeli, ühendab MTA ja RIKi andmed ja arvutab vajalikud faktid (nt juhatuse muutuse, võla vanuse grupid jm) ja dimensioonid stage andmete põhjal.
+3. **Transformatsioon** —  `refresh_stage_incremental.sh` leiab puuduvad RAW snapshotid ja värskendab ainult vajalikud kuupäevad. `refresh_mart_star.sh` ehitab faktitabeli, ühendab MTA ja RIKi andmed ja arvutab vajalikud faktid (nt juhatuse muutuse, võla vanuse grupid jm) ja dimensioonid stage andmete põhjal.
 4. **Testimine** — `run_data_quality_checks.py` kirjutab 18 andmekvaliteedi testi erinevate kihtide (raw, stage, mart) andmete kontrollimiseks, mis salvestuvad `quality` skeemi  (sh. quality.data_quality_results tabelisse) ja kuvatakse ka dashboardil.
 5. **Näidikulaud** — Näidikulaud näitab viimase päeva juhatuse vahetusega maksuvõlgnike nimekirja, juhatuse vahetusega ettevõtete arvu ja maksuvõlga, nende muutust ajas ning maksuvõlga maksuvõla vanusegruppides. Lisaks ka andmekvaliteedi testide tulemusi.
 

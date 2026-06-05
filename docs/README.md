@@ -169,7 +169,7 @@ Testide tulemused: salvestatakse quality.data_quality_results tabelisse ja on n�
 
 ## Meeskond
 
-| Nimi | Roll |
+| Nimi | Tööjaotuse roll |
 |------|------|
 | Andrus Säde | Andmeallika omanik |
 | Andrus Säde/Tuuli Hani/Külli Peeduli | Transformatsioonide omanik |

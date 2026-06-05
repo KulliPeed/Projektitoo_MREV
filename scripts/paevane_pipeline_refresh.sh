@@ -8,6 +8,13 @@ DB_USER="andrus"
 LOCK_NAME="paevane_pipeline_refresh.sh"
 
 cd "$PROJECT_DIR"
+
+if [ -f "$PROJECT_DIR/.env" ]; then
+  set -a
+  . "$PROJECT_DIR/.env"
+  set +a
+fi
+
 mkdir -p logs
 
 TS="$(date +"%Y-%m-%d_%H%M%S")"

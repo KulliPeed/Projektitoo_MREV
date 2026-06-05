@@ -159,7 +159,7 @@ Testide tulemused: salvestatakse quality.data_quality_results tabelisse ja on n�
 - RAW import on idempotentne ja logib tegevused admin.raw_import_audit tabelisse.
 
 **Puudused:**
-- Kvaliteedi testid toovad välja mõningad probleemid mida ei peaks lugema veaks (nendega ei jõudnud tegeleda): nt. MTA andmed ei vasta formaadile aga MTA andmetes registrikood ei pea olema numbri formaadis, kuna nende hulgas esineb ka mitteresidente, kelle registrikood algab tähekombinatsiooniga. Andmekvaliteedi test "stage_mta_bad_registrikood" loeb sellised hetkel veaks.
+- Kvaliteedi testid toovad välja mõningad probleemid, mida ei peaks lugema veaks (nendega ei jõudnud tegeleda): nt. MTA andmed ei vasta formaadile aga MTA andmetes registrikood ei pea olema numbri formaadis, kuna nende hulgas esineb ka mitteresidente, kelle registrikood algab tähekombinatsiooniga. Andmekvaliteedi test "stage_mta_bad_registrikood" loeb sellised hetkel veaks.
 - Skriptide puhastamisega ei jõudnud tegeleda.
 - Andmekvaliteedi FAIL/WARN teavitusi me ei jõudnud luua, tekitasime ainult kokkuvõtte dashboardile.
 

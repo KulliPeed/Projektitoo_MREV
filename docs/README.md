@@ -20,11 +20,8 @@ Selleks loodud juhtimislaud võimaldab saada varajase ja ajakohase ülevaate ett
 ```mermaid
 flowchart LR
     %% Andmeallikad
-    source1[EMTA maksuvõla andmed] --> ingest["Sissevõtt Cron cheduleriga:<br/>09:30 MTA ja 12:00 RIK <br/>bash wrapper/Python/SQL]
+    source1[EMTA maksuvõla andmed] --> ingest["Sissevõtt Cron cheduleriga:<br/>09:30 MTA ja 12:00 RIK <br/>bash wrapper/Python/SQL"]
     source2[RIK äriregistri andmed] --> ingest
-
-    %% Scheduler / orkestreerimine
-    cron["Cron (scheduler)"] --> ingest
 
     %% Andmebaas (PostgreSQL)
     subgraph db[PostgreSQL]
@@ -63,7 +60,7 @@ Täpsem kirjeldus: [`docs/arhitektuur.md`](https://github.com/KulliPeed/Projekti
 
 | Komponent | Tööriist |
 |-----------|---------|
-| Sissevõtt | Python / SQL / Bash wrapper |
+| Sissevõtt | Python / SQL / Bash wrapper + cron |
 | Transformatsioon | Python / SQL / Bash wrapper |
 | Andmehoidla | PostgreSQL |
 | Näidikulaud | Superset |
@@ -73,7 +70,7 @@ Täpsem kirjeldus: [`docs/arhitektuur.md`](https://github.com/KulliPeed/Projekti
 
 ```bash
 # 1. Klooni repo ja liigu kausta
-git clone <repo-url>
+git clone <https://github.com/KulliPeed/Projektitoo_MREV>
 cd <projekti-kaust>
 
 # 2. Kopeeri keskkonnamuutujad
@@ -92,22 +89,25 @@ Näidikulaud: http://localhost:[PORT]
 
 ## Saladused ja konfiguratsioon
 
-Kõik saladused (paroolid, API võtmed, andmebaasi URL-id) on `.env` failis. Repos on ainult `.env.example`, mis näitab vajalike muutujate struktuuri ilma tegelike väärtusteta. Päris `.env` faili ei tohi GitHubi panna - see on `.gitignore`-s.
-
-Vajalikud muutujad:
+Kõik paroolid, secret key väärtused ja andmebaasi DSN-id peavad olema `.env` või `.env.superset` failides. Päris `.env` ja `.env.superset` faile ei tohi GitHubi commit'ida. Repos peab olema ainult näidisfail, näiteks `.env.superset.example`.
 
 | Muutuja | Tähendus | Näide |
-|---------|----------|-------|
-| `DB_PASSWORD` | PostgreSQL parool | (saladus) |
-| `[teised]` | ... | ... |
+|---|---|---|
+| `DB_PASSWORD` või `POSTGRES_PASSWORD` | PostgreSQL parool raw loaderite ja quality runneri jaoks | `<redacted>` |
+| `RUN_DATA_QUALITY_CHECKS` | Kas 13:30 pipeline käivitab quality runneri | `false` vaikimisi, `true` kui vaja |
+| `DATA_QUALITY_FAIL_PIPELINE` | Kas quality FAIL katkestab pipeline'i | `false` vaikimisi |
+| `SUPERSET_SECRET_KEY` | Superseti secret key | `<redacted>` |
+| `SUPERSET_METADATA_DB_URI` | Superseti metadata DB SQLAlchemy DSN | `<redacted>` |
+| `SUPERSET_READONLY_DB_USER` | Superseti lugemisroll | `superset_readonly` |
+| `SUPERSET_READONLY_DB_PASSWORD` | Superseti lugemisrolli parool | `<redacted>` |
 
 ## Andmevoog lühidalt
 
-1. **Sissevõtt** — [Kirjelda, kuidas andmed allikast kätte saadakse]
-2. **Laadimine** — Andmed laaditakse `raw` kihti
-3. **Transformatsioon** — [Kirjelda peamised arvutused ja mudelid]
-4. **Testimine** — 18 andmekvaliteedi testi erinevate kihtide (raw, staging, mart) andmete kontrollimiseks, mis salvestuvad tabelisse quality.data_quality_results ja kuvatakse ka dashboardil.
-5. **Näidikulaud** — Näidikulaud näitab viimase päeva juhatuse vahetusega maksuvõlgnike nimekirja, juhatuse vahetusega ettevõtete arvu ja maksuvõlga, nende muutust ajas ning maksuvõlga maksuvõla vanusegruppides. Lisaks ka andmekvaliteedi testide tulemused.
+1. **Sissevõtt** —  Cron käivitab skriptid, mis laevad MTA CSV ja RIK JSON ZIP failid alla.
+2. **Laadimine** — Andmed laaditakse RAW kihti.
+3. **Transformatsioon** — [Kirjelda peamised arvutused ja mudelid]  `refresh_stage_incremental.sh` leiab puuduvad RAW snapshotid ja värskendab ainult vajalikud kuupäevad. `refresh_mart_star.sh` ehitab faktitabeli, ühendab MTA ja RIKi andmed ja arvutab vajalikud faktid (nt juhatuse muutuse, võla vanuse grupid jm) ja dimensioonid stage andmete põhjal.
+4. **Testimine** — `run_data_quality_checks.py` kirjutab 18 andmekvaliteedi testi erinevate kihtide (raw, staging, mart) andmete kontrollimiseks, mis salvestuvad `quality` skeemi  (sh. quality.data_quality_results tabelisse) ja kuvatakse ka dashboardil.
+5. **Näidikulaud** — Näidikulaud näitab viimase päeva juhatuse vahetusega maksuvõlgnike nimekirja, juhatuse vahetusega ettevõtete arvu ja maksuvõlga, nende muutust ajas ning maksuvõlga maksuvõla vanusegruppides. Lisaks ka andmekvaliteedi testide tulemusi.
 
 ## Andmekvaliteedi testid
 

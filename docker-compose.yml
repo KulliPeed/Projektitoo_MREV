@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: andmeprojekt_postgres
+    environment:
+      POSTGRES_DB: andmeprojekt
+      POSTGRES_USER: andrus
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    volumes:
+      - ./adminer/plugins-enabled:/var/www/html/plugins-enabled:ro
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:

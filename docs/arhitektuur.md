@@ -21,7 +21,7 @@ vähemalt ühe varasema juhatuse liikme seos lõppes.
 |---------|------|--------------|------|
 | [EMTA maksuvõla avaandmed](https://ncfailid.emta.ee/s/XKJLjtynFeYdGyC/download/maksuvolglaste_nimekiri.csv) | CSV | Jah, 1 kord päevas | Sisend ettevõtete maksuvõla olemasolu ja selle vanuse tuvastamisel |
 | [RIK Äriregistri avaandmed, kaardile kantud isikud](https://avaandmed.ariregister.rik.ee/sites/default/files/avaandmed/ettevotja_rekvisiidid__kaardile_kantud_isikud.json.zip) | JSON | Jah, 1 kord päevas | Sisend juhatuse liikmete seoste ja nende muutuste tuvastamisel |
-> Esimesed katsetused tehtud, andmete sissevõtt õnnestub.
+
 ## Andmevoog
 
 ```mermaid
@@ -69,14 +69,14 @@ flowchart LR
 
 ## Tööjaotus
 
-| Roll | Vastutus | Täitja |
+| Roll | Vastutus | Täitja* |
 |------|----------|--------|
 | Andmeallika omanik | Kirjutab sissevõtu loogika ja hoiab failide allalaadimise töös | Andrus |
 | Transformatsioonide omanik | Kirjutab intermediate ja mart kihi mudelid ning mõõdikute arvutuse | Andrus/Külli/Tuuli |
 | Kvaliteedi omanik | Kirjutab testid ja vaatab läbi ebaõnnestunud kontrollid | Tuuli/Külli |
 | Näidikulaua omanik | Ehitab näidikulaua, visualiseeringud seotuna äriküsimusega | Külli/Tuuli |
 
->Iga rolli juurde märgitud esimene isik on põhivastutaja ja teised märgitud on kaasvastutajad
+*\*Iga rolli juurde märgitud esimene isik on põhivastutaja ja teised märgitud on kaasvastutajad*
 ## Riskid
 
 | Risk | Mõju | Maandus |
@@ -84,7 +84,7 @@ flowchart LR
 | Risk 1 — EMTA päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | Veateavitus juhtimislaual + uus andmete laadimise/sissevõtu käivitus  |
 | Risk 2 -  RIK päeva andmed jäävad puudu | Puudulikud või ebatäpsed tulemused | Veateavitus juhtimislaual + uus andmete laadimise/sissevõtu käivitus |
 | Risk 3 -  allikandmete struktuur on muutunud | andmed jäävad uuendamata | Veateavitus juhtimislaual + koodimuudatus ja andmete sissevõtu taaskäivitus |
-| Risk 4 - võla summa puudub | ei klassifitseeru võlaga ettevõtteks | Kui viimases saadaolevas snapshotis võla summa puudus, jätab ettevõtte kirje järgmisse kihti (stage) lisamata |
+| Risk 4 - võla summa puudub | ei klassifitseeru võlaga ettevõtteks | Kui viimases saadaolevas snapshotis võla summa puudus, jätab ettevõtte kirje järgmisse kihti (STAGE) lisamata |
 
 ## Privaatsus ja turve
 

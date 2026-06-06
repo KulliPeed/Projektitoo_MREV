@@ -50,7 +50,7 @@ flowchart LR
     transform2 --> mart
 
     %% Tarbimine
-    mart --> dashboard["Näidikulaud (Superset)"]
+    mart --> dashboard["Juhtimislaud (Superset)"]
     raw -->  source3[Andmekvaliteedi testid]
     stage --> source3[Andmekvaliteedi testid]
     mart --> source3[Andmekvaliteedi testid]
@@ -74,7 +74,7 @@ flowchart LR
 | Andmeallika omanik | Kirjutab sissevõtu loogika ja hoiab failide allalaadimise töös | Andrus |
 | Transformatsioonide omanik | Kirjutab intermediate ja mart kihi mudelid ning mõõdikute arvutuse | Andrus/Külli/Tuuli |
 | Kvaliteedi omanik | Kirjutab testid ja vaatab läbi ebaõnnestunud kontrollid | Tuuli/Külli |
-| Näidikulaua omanik | Ehitab näidikulaua, visualiseeringud seotuna äriküsimusega | Külli/Tuuli |
+| Juhtimislaua omanik | Ehitab juhtimislaua, visualiseeringud seotuna äriküsimusega | Külli/Tuuli |
 
 *\*Iga rolli juurde märgitud esimene isik on põhivastutaja ja teised märgitud on kaasvastutajad*
 ## Riskid

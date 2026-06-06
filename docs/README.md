@@ -62,7 +62,7 @@ Täpsem kirjeldus: [`docs/arhitektuur.md`](https://github.com/KulliPeed/Projekti
 | Sissevõtt | Python / SQL / Bash wrapper + cron |
 | Transformatsioon | Python / SQL / Bash wrapper + cron |
 | Andmehoidla | PostgreSQL |
-| Näidikulaud | Superset |
+| Juhtimislaud | Superset |
 | Orkestreerimine | cron |
 
 ## Käivitamine
@@ -182,6 +182,6 @@ Testide tulemused: salvestatakse quality.data_quality_results tabelisse ja on n�
 | Andrus Säde | Andmeallika omanik |
 | Andrus Säde/Tuuli Hani/Külli Peeduli | Transformatsioonide omanik |
 | Tuuli Hani/Külli Peeduli | Kvaliteedi omanik |
-| Külli Peeduli/Tuuli Hani | Näidikulaua omanik |
+| Külli Peeduli/Tuuli Hani | Juhtimislaua omanik |
 
 Iga rolli juurde märgitud esimene isik on põhivastutaja ja teised märgitud on kaasvastutajad.

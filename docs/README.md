@@ -68,7 +68,7 @@ Täpsem kirjeldus: [`docs/arhitektuur.md`](https://github.com/KulliPeed/Projekti
 ## Käivitamine
 Andmevoog on üles ehitatud selliselt, et on võimalik käivitada vaid Andruse arvutist. Põhjus on selles, et äriküsimusele vastamiseks on vaja mitme päeva andmed alla laadida ja failid on suured, et neid omakorda ühise keskkonna vahendusel teistega jagada.
 
-Töötavat Superseti näeb grupi poolt valvestatud videost ja Superseti dashboardi lingilt: https://planeggmobile.com:8443/superset/dashboard/4/
+Töötavat Superseti juhtimislauda näeb grupi poolt valvestatud videost ja Superseti juhtimislaua lingilt: https://planeggmobile.com:8443/superset/dashboard/4/
 
 ## Saladused ja konfiguratsioon
 

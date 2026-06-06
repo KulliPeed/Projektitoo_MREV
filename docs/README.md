@@ -117,7 +117,7 @@ Projekt kontrollib järgmist:
 | TEST 17      | mart_star_required_columns       | MART_STAR veerud puuduvad.                                                    | MART_STAR  | MART_STAR  |
 | TEST 18      | fact_juhatuse_muutuse_not_null   | FACT tabelis juhatuse_muutuse_fakt sisaldab NULL väärtusi.                   | FACT       | MART_STAR  |
 
-Testide tulemused: salvestatakse quality.data_quality_results tabelisse ja on nähtavad juhtimislaual.
+Testide tulemused: salvestatakse quality.data_quality_results tabelisse ja on nähtavad [`juhtimislaual`](https://planeggmobile.com:8443/superset/dashboard/4/).
 
 ## Projekti struktuur
 

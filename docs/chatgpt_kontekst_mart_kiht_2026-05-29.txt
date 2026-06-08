@@ -1,0 +1,636 @@
+CHATGPT KONTEKST: MART KIHI VALMIMINE JA ANDMEPROJEKTI HETKESEIS
+Koostatud: 2026-05-29
+Projekt: MREV / andmeprojekt
+Tööprojekti kataloog Raspberry Pi masinas: /home/pi/kool/projekt
+GitHubi kloon: /home/pi/kool/Projektitoo_MREV_repo
+GitHubi haru: lisa-pi4-koodid
+Pull Request main harusse: https://github.com/KulliPeed/Projektitoo_MREV/pull/2
+
+
+SELLE FAILI EESMÄRK
+===================
+
+See tekstifail on mõeldud sisendiks ChatGPT-le, et koostada Tuulile ja Küllile
+arusaadav PDF-raport andmeprojekti hetkeseisust. Raport peab seletama, mis
+MART kiht on, mida sellega 2026-05-29 seisuga tehtud sai, mis on kontrollitud
+tulemused ning kuidas projektiga edasi minna.
+
+PDF-is tasub rõhutada, et projekt ei ole ainult failide allalaadimine. Praeguseks
+on olemas mitmekihiline andmetöötluse lahendus:
+
+1. RAW kiht säilitab algsed MTA ja RIK avaandmed.
+2. STAGE kiht puhastab ja struktureerib need analüüsiks sobivasse vormi.
+3. MART kiht teeb valmis ärivaated, mida saab kasutada aruandluses ja
+   dashboard'is, näiteks Supersetis.
+
+Tuuli ja Külli jaoks tuleks kirjutada eelkõige selgitavalt: kuhu projekt on
+jõudnud, miks MART kiht vajalik on ja mida sellest praktiliselt vaadata saab.
+
+
+LÜHIKOKKUVÕTE
+=============
+
+2026-05-29 seisuga on andmeprojekt jõudnud MART kihini. See tähendab, et
+andmebaasis on loodud eraldi `mart` skeem, kus on valmis aruandluse jaoks
+mõeldud vaated. Need vaated ühendavad MTA maksuvõlglaste andmed RIK
+Äriregistri andmetega ning arvutavad välja olulisemad koondnäitajad.
+
+MART kihi kõige olulisem praktiline tulemus on see, et andmetest saab nüüd
+otse küsida:
+
+- kui palju on viimases MTA seisus maksuvõlglasi;
+- kui suur on maksuvõlg kokku;
+- kui hästi MTA ettevõtted RIK andmetega ühildusid;
+- millistes võla vanusegruppides maksuvõlg paikneb;
+- millistel maksuvõlglastel on viimase kahe RIK snapshoti vahel juhatus
+  muutunud;
+- millised on suurima maksuvõlaga ettevõtted;
+- millised andmestikud sobivad Superseti dashboard'i loomiseks.
+
+Töö tulemus on tehniliselt kontrollitud. MART refresh ja kvaliteedikontrollid
+lõpetasid edukalt. Kontrollide järgi ei muutnud MART kiht RAW ega STAGE andmeid,
+vaid luges sealt andmeid ja lõi nende põhjal aruandlusvaated.
+
+
+PROJEKTI EESMÄRK
+================
+
+Projekti eesmärk on ehitada andmeinseneeria lahendus, mis ühendab kaks avalikku
+andmeallikat:
+
+1. MTA maksuvõlglaste avaandmed.
+2. RIK Äriregistri avaandmed ettevõtete ja kaardile kantud isikute kohta.
+
+Äriline mõte on näha maksuvõlglasi koos Äriregistri taustaga. Eriti oluline on
+saada aru, kas maksuvõlglasel on hiljuti juhatus muutunud. See võib olla kasulik
+signaal riskianalüüsis, aruandluses või edasises uurimises.
+
+Projekt töötab Raspberry Pi 4 masinas PostgreSQL andmebaasi ja Dockeriga.
+Andmebaasi nimi on `andmeprojekt`. PostgreSQL konteiner on
+`andmeprojekt_postgres`.
+
+
+ANDMEKIHID LIHTSALT SELETATUNA
+==============================
+
+RAW kiht
+--------
+
+RAW kiht on algandmete hoidla. Sinna pannakse MTA CSV ja RIK JSON võimalikult
+algsel kujul. RAW kihi eesmärk on säilitada allika tõene jälg, et vajadusel
+saaks alati tagasi minna algfaili või algse JSON kirje juurde.
+
+Olulisemad RAW tabelid:
+
+- `raw.mta_maksuvolglased_csv`
+- `raw.rik_kaardile_kantud_isikud_json`
+
+STAGE kiht
+----------
+
+STAGE kiht teeb algandmed puhtaks ja päringukõlblikuks. Näiteks:
+
+- maksuvõla summad teisendatakse numbrilisteks väljadeks;
+- kuupäevad teisendatakse päris `date` tüübiks;
+- registrikoodid puhastatakse;
+- RIK JSON lahutatakse ettevõtete ja isikute/rollide tabeliteks;
+- arvutatakse maksuvõla vanus päevades ja võla vanusegrupp.
+
+Olulisemad STAGE tabelid:
+
+- `stage.mta_maksuvolglased`
+- `stage.rik_ettevotted`
+- `stage.rik_kaardile_kantud_isikud`
+
+MART kiht
+---------
+
+MART kiht on aruandluse ja dashboard'i kiht. MART ei ole algandmete hoidla ega
+puhastustabelite kiht. MART eesmärk on panna analüüsiks vajalikud andmed
+valmis vaadetesse, et lõppkasutaja, õppejõud või dashboard ei peaks iga kord
+keerulist SQL-i ise kirjutama.
+
+MART vaated loevad ainult STAGE kihist. RAW tabeleid MART ärivaadetes otse ei
+kasutata. See on oluline arhitektuuriline piir: RAW on algandmete säilitamiseks,
+STAGE on puhastamiseks ja MART on analüüsiks.
+
+
+MIS 2026-05-29 MART TÖÖS VALMIS SAI
+===================================
+
+Lisatud failid:
+
+- `db/migrations/100_create_mart_views.sql`
+- `quality/030_mart_quality_checks.sql`
+- `scripts/refresh_mart.sh`
+- `docs/mart_kiht_raport_2026-05-29.md`
+- `docs/chatgpt_kontekst_mart_kiht_2026-05-29.txt`
+
+Andmebaasis loodi `mart` skeem ja sinna 8 vaadet:
+
+1. `mart.v_latest_dates`
+2. `mart.v_maksuvolg_vanusegruppide_kaupa`
+3. `mart.v_viimased_maksuvolglased_rik_andmetega`
+4. `mart.v_juhatuse_muutused_viimane_paev`
+5. `mart.v_maksuvolglased_juhatuse_muutusega`
+6. `mart.v_maksuvolg_juhatuse_muutus_vanusegrupp`
+7. `mart.v_dashboard_kpi`
+8. `mart.v_top_maksuvolglased`
+
+Lisaks loodi skript `scripts/refresh_mart.sh`, mis:
+
+1. käivitab MART vaadete loomise SQL-i;
+2. käivitab MART kvaliteedikontrollid;
+3. kirjutab logi kausta `logs/`;
+4. kuvab lõpus lühikokkuvõtte.
+
+Edukas MART refreshi logi:
+
+- `logs/mart_refresh_2026-05-29_091625.log`
+
+
+MART VAATED INIMESELE SELETATUNA
+================================
+
+1. `mart.v_latest_dates`
+------------------------
+
+See on väike tehniline vaade, mis näitab, milliseid viimaseid kuupäevi MART
+kiht kasutab.
+
+Praeguses kontrollitud seisus:
+
+- viimane MTA snapshot_date: `2026-05-27`
+- viimane MTA data_as_of: `2026-05-26`
+- viimane RIK snapshot_date: `2026-05-27`
+- eelmine RIK snapshot_date: `2026-05-26`
+
+MTA puhul on oluline eristada kahte kuupäeva. `snapshot_date` on laadimise või
+snapshoti kuupäev andmebaasis. `data_as_of` on andmete sisuline seis, mis tuleb
+MTA failist.
+
+2. `mart.v_maksuvolg_vanusegruppide_kaupa`
+------------------------------------------
+
+See vaade koondab viimase MTA seisu maksuvõla võla vanusegruppide kaupa.
+
+Näiteks saab sellest vaadata:
+
+- mitu ettevõtet on igas võla vanusegrupis;
+- kui suur on nende maksuvõlg kokku;
+- kui palju sellest on vaidlustatud;
+- kui palju on tasumisgraafikus.
+
+Kontrollitud seisus oli võlg jagatud nelja gruppi:
+
+- `kuni 2 kuud`
+- `2-5 kuud`
+- `6-11 kuud`
+- `>= 1 aasta`
+
+3. `mart.v_viimased_maksuvolglased_rik_andmetega`
+-------------------------------------------------
+
+See on üks kõige olulisemaid baasvaateid. Vaade võtab viimase MTA maksuvõlglaste
+seisu ja ühendab selle viimase RIK ettevõtete snapshotiga registrikoodi alusel.
+
+Sellest saab iga maksuvõlglase kohta:
+
+- registrikoodi;
+- MTA nime;
+- RIK nime;
+- ühtlustatud nime;
+- maksuvõla;
+- vaidlustatud summa;
+- tasumisgraafikus summa;
+- võla vanuse;
+- võla vanusegrupi;
+- tunnuse, kas ettevõte leiti RIK andmetest.
+
+See vaade on oluline ka andmekvaliteedi mõttes, sest näitab, kui hästi MTA
+ettevõtted RIK andmetega kokku lähevad.
+
+4. `mart.v_juhatuse_muutused_viimane_paev`
+------------------------------------------
+
+See vaade võrdleb viimast ja eelmist RIK snapshoti ning otsib ettevõtteid, mille
+juhatuse liikmete koosseis on muutunud.
+
+Loogika:
+
+- võetakse viimase RIK snapshoti juhatuse liikmed;
+- võetakse eelmise RIK snapshoti juhatuse liikmed;
+- võrreldakse neid ettevõtte registrikoodi ja isiku võtme alusel;
+- leitakse lisatud juhatuse liikmed;
+- leitakse eemaldatud juhatuse liikmed;
+- arvutatakse, kas juhatus muutus.
+
+Tulemus ei ütle, kas muutus on hea või halb. See ütleb ainult, et viimase kahe
+RIK snapshoti vahel on juhatuse koosseisus erinevus.
+
+Juhatuse liikme tuvastamise võtmes kasutatakse võimalusel isikukoodi. Kui seda
+ei ole, kasutatakse nime, rolli ja rolli alguskuupäeva põhist asendusvõtit. See
+on praktiline kompromiss, sest kõigil RIK isikuridadel ei pruugi olla tavalist
+isikukoodi.
+
+5. `mart.v_maksuvolglased_juhatuse_muutusega`
+---------------------------------------------
+
+See vaade ühendab maksuvõlglased ja juhatuse muutuse info. See on dashboard'i
+jaoks väga praktiline töövaade.
+
+Iga maksuvõlglase kohta saab sellest näha:
+
+- kas ettevõte leiti RIK andmetest;
+- kas juhatus muutus;
+- mitu juhatuse liiget lisandus;
+- mitu juhatuse liiget eemaldati;
+- kui suur on maksuvõlg;
+- millises võla vanusegrupis ettevõte on.
+
+See on hea tabelivaade, mida saab kasutada näiteks Supersetis filtrite ja
+detailtabelite jaoks.
+
+6. `mart.v_maksuvolg_juhatuse_muutus_vanusegrupp`
+-------------------------------------------------
+
+See vaade teeb koondi kahe mõõtme järgi:
+
+- võla vanusegrupp;
+- kas juhatus muutus või ei muutunud.
+
+Sellest saab teha diagrammi, mis näitab, kas juhatuse muutusega ettevõtted
+paiknevad pigem värskes või vanas maksuvõlas ning kui suur on nende maksuvõlg.
+
+7. `mart.v_dashboard_kpi`
+-------------------------
+
+See on ühe rea KPI vaade. See sobib otse dashboard'i ülemisteks mõõdikuteks.
+
+Praeguses kontrollitud seisus on seal näiteks:
+
+- MTA ettevõtteid viimases seisus: 37 442
+- RIKiga ühildunud: 36 868
+- RIKita: 574
+- RIK ühildumise määr: 98.47%
+- maksuvõlg kokku: 622 471 286.38
+- juhatuse muutusega maksuvõlglasi: 12
+- juhatuse muutusega maksuvõlg kokku: 115 936.02
+- juhatuse muutusega maksuvõlglaste osakaal: 0.03%
+
+8. `mart.v_top_maksuvolglased`
+------------------------------
+
+See on tabelivaade suurima maksuvõlaga ettevõtete vaatamiseks. Vaade ise ei
+pane `LIMIT` piirangut, et dashboard või kasutaja saaks ise otsustada, kas näha
+top 10, top 20, top 50 või kogu nimekirja.
+
+
+KONTROLLITUD ARVUD JA TULEMUSED
+===============================
+
+MART refresh käivitati skriptiga:
+
+`./scripts/refresh_mart.sh`
+
+Tulemus:
+
+- refresh õnnestus;
+- kvaliteedikontrollid läbisid;
+- logi: `logs/mart_refresh_2026-05-29_091625.log`;
+- refresh koos kontrollidega kestis umbes 260 sekundit.
+
+Kasutatud andmeseis:
+
+- MTA viimane `snapshot_date`: `2026-05-27`
+- MTA viimane `data_as_of`: `2026-05-26`
+- RIK viimane `snapshot_date`: `2026-05-27`
+- RIK eelmine `snapshot_date`: `2026-05-26`
+
+Vaadete rea-arvud:
+
+- `mart.v_latest_dates`: 1 rida
+- `mart.v_maksuvolg_vanusegruppide_kaupa`: 4 rida
+- `mart.v_viimased_maksuvolglased_rik_andmetega`: 37 442 rida
+- `mart.v_juhatuse_muutused_viimane_paev`: 320 894 rida
+- `mart.v_maksuvolglased_juhatuse_muutusega`: 37 442 rida
+- `mart.v_maksuvolg_juhatuse_muutus_vanusegrupp`: 6 rida
+- `mart.v_dashboard_kpi`: 1 rida
+- `mart.v_top_maksuvolglased`: 37 442 rida
+
+Andmekvaliteedi kontrollid:
+
+- MART objektid eksisteerivad: OK
+- MTA viimase seisu ridade pariteet: OK
+- Stage MTA ridu viimases seisus: 37 442
+- MART MTA ridu viimases seisus: 37 442
+- Maksuvõla summa pariteet: OK
+- Stage maksuvõlg kokku: 622 471 286.38
+- MART maksuvõlg kokku: 622 471 286.38
+- RIK ühildumise määr: OK, 98.47%
+- Juhatuse muutuse loogikas negatiivseid arve: 0
+- Juhatuse muutuse loogikavigu: 0
+- Dashboard KPI mitte-negatiivsete arvude kontroll: OK
+
+Maksuvõlg võla vanusegruppide kaupa:
+
+| Võla vanusegrupp | Ettevõtteid | Maksuvõlg | Vaidlustatud | Tasumisgraafikus |
+| --- | ---: | ---: | ---: | ---: |
+| `>= 1 aasta` | 17 900 | 463 111 580.50 | 5 253 804.48 | 27 917 943.78 |
+| `2-5 kuud` | 6 300 | 60 405 667.82 | 198 812.94 | 33 998 595.50 |
+| `6-11 kuud` | 5 360 | 68 544 251.22 | 23 545.14 | 27 755 058.44 |
+| `kuni 2 kuud` | 7 882 | 30 409 786.84 | 0.00 | 13 826 245.62 |
+
+Märkus PDF-i jaoks: kõige suurem maksuvõla summa on üle ühe aasta vanas võlas.
+See on sisuliselt oluline tähelepanek, sest näitab, et suur osa võlast ei ole
+uus ega ajutine, vaid pikema kestusega probleem.
+
+
+MIDA SEE TÄHENDAB TUULILE JA KÜLLILE
+====================================
+
+Lihtsas keeles:
+
+Projektiga on jõutud selleni, et andmed ei ole enam ainult alla laaditud või
+andmebaasi pandud. Need on puhastatud, ühendatud ja pandud sellisesse kujusse,
+millest saab hakata tegema aruandeid ja dashboard'e.
+
+MART kiht on nagu valmis analüüsilaud. Kui RAW on algne failikapp ja STAGE on
+korrastatud andmeladu, siis MART on juba teemade kaupa valmis vaade, mida saab
+kasutada otsuste, graafikute ja esitluse jaoks.
+
+Oluline saavutus:
+
+- MTA ja RIK andmed on registrikoodi alusel ühendatud.
+- Ühildumine on kõrge: 98.47%.
+- Maksuvõla kogusumma ja ridade arv klapivad STAGE ja MART vahel.
+- On olemas vaade juhatuse muutuste analüüsimiseks.
+- On olemas KPI vaade ja tabelivaated Superseti jaoks.
+
+See tähendab, et järgmine nähtav samm ei ole enam andmebaasi sisemine ehitamine,
+vaid dashboard'i või raporti loomine.
+
+
+MIDA MART KIHT EI TEE
+=====================
+
+MART kiht ei tee automaatselt järeldust, et juhatuse muutus tähendab pahatahtlikku
+käitumist. See tuvastab ainult andmetes nähtava fakti: kas viimase kahe RIK
+snapshoti vahel juhatuse koosseis muutus.
+
+MART kiht ei paranda MTA ega RIK algandmeid. Kui allikas on ettevõtte nimi
+teistmoodi, RIKis puudub vaste või mõni isikuandmete väli on hashitud, siis MART
+näitab seda olemasoleva andmekvaliteedi piires.
+
+MART kiht ei asenda Superseti dashboard'i. Ta annab dashboard'i jaoks valmis
+andmestikud. Dashboard tuleb järgmise sammuna eraldi üles ehitada.
+
+
+TEADAOLEVAD PIIRANGUD JA RISKID
+===============================
+
+1. MART vaated on praegu tavalised PostgreSQL vaated, mitte materialiseeritud
+   tabelid.
+
+See on lihtne ja läbipaistev lahendus, kuid keerulisemad vaated võivad suure
+andmemahu korral olla aeglasemad. Kõige kallim osa on
+`mart.v_juhatuse_muutused_viimane_paev`, sest see võrdleb kahe suure RIK
+snapshoti juhatuse liikmeid.
+
+2. Juhatuse muutuse vaade võrdleb ainult viimast ja eelmist RIK snapshoti.
+
+See on hetkel teadlikult piiratud loogika. See vastab küsimusele: "kas viimasel
+päeval on juhatus muutunud?". See ei vasta veel küsimusele: "kuidas juhatus on
+muutunud viimase kuu või aasta jooksul?".
+
+3. Isikute võrdlemisel kasutatakse mõnikord asendusvõtit.
+
+Kui isikukood puudub, kasutatakse nime, rolli ja rolli alguskuupäeva põhist
+võtit. See on praktiline lahendus, kuid mitte sama tugev kui isikukood.
+
+4. MTA ja RIK ei ühildunud 100%.
+
+Ühildumise määr oli 98.47%, mis on väga hea, kuid 574 MTA rida ei leidnud RIK
+vastet. Need võivad vajada hiljem eraldi uurimist.
+
+5. Stage ja MART refresh ei ole veel täielikult päevasesse automaatikasse
+seotud.
+
+RAW laadimised toimuvad croniga. Stage incremental ja MART refresh on olemas,
+kuid järgmine arhitektuurne samm on panna päevane töövoog terviklikuks:
+
+RAW laadimine -> STAGE incremental refresh -> MART refresh -> kvaliteedikontrollid.
+
+
+SOOVITATUD SUPERSETI DATASETID
+==============================
+
+Superseti jaoks tuleks esimesena lisada need MART vaated:
+
+1. `mart.v_dashboard_kpi`
+2. `mart.v_maksuvolg_vanusegruppide_kaupa`
+3. `mart.v_maksuvolg_juhatuse_muutus_vanusegrupp`
+4. `mart.v_top_maksuvolglased`
+5. `mart.v_maksuvolglased_juhatuse_muutusega`
+
+Soovitatud esimesed dashboard'i elemendid:
+
+1. KPI kaart: maksuvõlglaste arv.
+2. KPI kaart: maksuvõlg kokku.
+3. KPI kaart: RIK ühildumise määr.
+4. KPI kaart: juhatuse muutusega maksuvõlglaste arv.
+5. Tulpdiagramm: maksuvõla summa võla vanusegrupi kaupa.
+6. Tulpdiagramm: juhatus muutus / ei muutunud maksuvõla summa järgi.
+7. Tabel: top maksuvõlglased.
+8. Tabel: juhatuse muutusega maksuvõlglased.
+
+Dashboard'i esmane sõnum võiks olla:
+
+"Andmeprojekt ühendab MTA maksuvõlglaste nimekirja RIK Äriregistri andmetega ja
+näitab, kas maksuvõlglasel on hiljuti juhatuse koosseis muutunud."
+
+
+SOOVITATUD JÄRGMISED SAMMUD
+===========================
+
+1. Vaadata ja kinnitada GitHubi Pull Request.
+
+Avatud PR:
+
+https://github.com/KulliPeed/Projektitoo_MREV/pull/2
+
+PR lisab MART kihi failid harust `lisa-pi4-koodid` harusse `main`.
+
+2. Ehitada Superseti esimene dashboard.
+
+Alustada tuleks KPI vaate ja kahe-kolme lihtsa graafikuga. Esimene versioon ei
+pea olema lõplik. Oluline on saada nähtav tulemus, mida saab Tuulile ja Küllile
+näidata.
+
+3. Lisada päevane automaatne töövoog.
+
+Praegu on mõistlik järgmine järjestus:
+
+- MTA RAW laadimine;
+- RIK RAW laadimine;
+- `scripts/refresh_stage_incremental.sh`;
+- `scripts/refresh_mart.sh`;
+- kontrollida logidest, kas kõik lõppes OK.
+
+Selle saab hiljem panna cron'i, kuid enne tuleks paar käsitsi käivitust üle
+vaadata.
+
+4. Kaaluda MART jõudluse parandamist.
+
+Kui Superset hakkab juhatuse muutuse vaadet tihti pärima ja see on aeglane,
+tasub `mart.v_juhatuse_muutused_viimane_paev` või sellest sõltuvad KPI-d teha
+materialiseeritud vaateks või MART tabeliks.
+
+5. Uurida RIKita MTA ridu.
+
+Praegu jäi 574 viimase MTA seisu rida RIKiga ühildumata. See ei takista projekti,
+kuid raportis võib mainida, et need on järgmise andmekvaliteedi analüüsi teema.
+
+6. Laiendada juhatuse muutuse analüüsi ajas.
+
+Praegune loogika vaatab viimast päeva. Hiljem võiks lisada:
+
+- juhatus muutus viimase 7 päeva jooksul;
+- juhatus muutus viimase 30 päeva jooksul;
+- juhatuse muutuste ajalugu ettevõtte kaupa;
+- seos maksuvõla vanuse ja juhatuse muutuse ajastuse vahel.
+
+
+PDF-I SOOVITATUD STRUKTUUR
+==========================
+
+ChatGPT võiks PDF-i koostamisel kasutada järgmist ülesehitust:
+
+1. Pealkiri
+
+"MREV andmeprojekti hetkeseis: MART kiht ja aruandluse valmidus"
+
+2. Üheleheline juhtkonna kokkuvõte
+
+Kirjeldada, et andmed on nüüd kogutud, puhastatud, ühendatud ja pandud
+aruandluseks valmis MART vaadetesse.
+
+3. Arhitektuur
+
+Selgitada kolme kihti:
+
+- RAW: algandmed;
+- STAGE: puhastatud ja struktureeritud andmed;
+- MART: valmis aruandlusvaated.
+
+4. MART kihi sisu
+
+Kirjeldada 8 vaadet tavakeeles. Mitte keskenduda ainult SQL-ile.
+
+5. Kontrollitud tulemused
+
+Tuua välja:
+
+- 37 442 maksuvõlglast viimases MTA seisus;
+- 622 471 286.38 maksuvõlg kokku;
+- 98.47% RIK ühildumine;
+- 12 juhatuse muutusega maksuvõlglast;
+- 115 936.02 maksuvõlg juhatuse muutusega ettevõtetel;
+- kvaliteedikontrollid OK.
+
+6. Mida saab dashboard'is näidata
+
+Näidata Superseti soovitatud graafikuid ja tabeleid.
+
+7. Piirangud
+
+Kirjeldada ausalt, et:
+
+- juhatuse muutus ei tähenda automaatselt riski või rikkumist;
+- praegune võrdlus on viimase kahe RIK snapshoti vahel;
+- osa MTA ridu ei ühildunud RIKiga;
+- jõudlust võib hiljem parandada materialiseerimisega.
+
+8. Järgmised sammud
+
+Kirjeldada PR-i kinnitamist, Superseti dashboard'i, automaatse töövoo sidumist
+ja hilisemat ajasügavamat juhatuse muutuste analüüsi.
+
+
+OLULINE SÕNASTUS PDF-I JAOKS
+============================
+
+Sobiv kokkuvõtte lause:
+
+"MART kihi valmimisega on projekt jõudnud andmete kogumise ja puhastamise
+etapist aruandluse ettevalmistamise etappi. Andmebaasis on nüüd valmis vaated,
+mis ühendavad MTA maksuvõlglased RIK Äriregistri andmetega ning võimaldavad
+analüüsida maksuvõla suurust, vanust, RIK ühildumist ja juhatuse hiljutisi
+muutusi."
+
+Sobiv ettevaatlik lause juhatuse muutuste kohta:
+
+"Juhatuse muutuse tunnus on analüütiline signaal, mitte hinnang ettevõtte
+käitumisele. See näitab ainult, et Äriregistri viimase kahe snapshoti vahel on
+juhatuse koosseisus tuvastatud erinevus."
+
+Sobiv järgmise sammu lause:
+
+"Järgmine nähtav tulemus peaks olema Superseti dashboard, mis kasutab MART kihi
+vaateid ning näitab projekti tulemusi graafikute, KPI kaartide ja detailtabelite
+kaudu."
+
+
+FAILID, MILLELE SAAB VAJADUSEL VIIDATA
+======================================
+
+MART tehniline raport:
+
+- `docs/mart_kiht_raport_2026-05-29.md`
+
+MART vaadete loomise SQL:
+
+- `db/migrations/100_create_mart_views.sql`
+
+MART kvaliteedikontrollid:
+
+- `quality/030_mart_quality_checks.sql`
+
+MART refresh skript:
+
+- `scripts/refresh_mart.sh`
+
+Stage kihi varasemad raportid:
+
+- `docs/stage_kiht_raport_2026-05-25.md`
+- `docs/stage_optimeerimine_raport_2026-05-27.md`
+
+
+LÕPPSEIS 2026-05-29
+===================
+
+MART kiht on valmis ja kontrollitud.
+
+Tehniliselt valmis:
+
+- 8 MART vaadet;
+- refresh skript;
+- kvaliteedikontrollid;
+- tehniline raport;
+- GitHubi haru `lisa-pi4-koodid`;
+- Pull Request `main` harusse.
+
+Sisuliselt valmis:
+
+- MTA ja RIK ühendatud viimase seisu analüüsiks;
+- maksuvõla KPI-d olemas;
+- võla vanusegrupi koondid olemas;
+- juhatuse muutuse tunnus olemas;
+- Superseti jaoks vajalikud datasetid olemas.
+
+Järgmine suur töö:
+
+- Superseti dashboard;
+- päevase töövoo automatiseerimine;
+- juhatuse muutuste ajalisem analüüs;
+- RIKita MTA ridade täiendav andmekvaliteedi uurimine.
